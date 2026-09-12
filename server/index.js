@@ -22,15 +22,31 @@ function genRef() {
 function todayStr() {
   return new Date().toISOString().split('T')[0];
 }
+const TOKEN_TTL = 7 * 24 * 3600 * 1000; // 7 วัน
 function makeToken() {
-  return crypto.randomBytes(32).toString('hex');
+  const payload = Buffer.from(
+    JSON.stringify({ exp: Date.now() + TOKEN_TTL })
+  ).toString('base64url');
+  const sig = crypto.createHmac('sha256', ADMIN_PASSWORD).update(payload).digest('hex');
+  return `${payload}.${sig}`;
 }
-// simple admin tokens in-memory
-const adminTokens = new Set();
+function verifyToken(tok) {
+  const [payload, sig] = String(tok || '').split('.');
+  if (!payload || !sig) return false;
+  const expect = crypto.createHmac('sha256', ADMIN_PASSWORD).update(payload).digest('hex');
+  const a = Buffer.from(sig);
+  const b = Buffer.from(expect);
+  if (a.length !== b.length || !crypto.timingSafeEqual(a, b)) return false;
+  try {
+    return JSON.parse(Buffer.from(payload, 'base64url').toString()).exp > Date.now();
+  } catch {
+    return false;
+  }
+}
 
 function requireAdmin(req, res, next) {
   const tok = (req.headers.authorization || '').replace('Bearer ', '');
-  if (!tok || !adminTokens.has(tok)) return res.status(401).json({ error: 'Unauthorized' });
+  if (!verifyToken(tok)) return res.status(401).json({ error: 'Unauthorized' });
   next();
 }
 
@@ -209,10 +225,7 @@ app.patch('/api/bookings/:ref/cancel', async (req, res) => {
 // ── admin: login ───────────────────────────────────────────────────────────
 app.post('/api/admin/login', (req, res) => {
   if (req.body.password !== ADMIN_PASSWORD) return res.status(401).json({ error: 'รหัสผ่านไม่ถูกต้อง' });
-  const token = makeToken();
-  adminTokens.add(token);
-  setTimeout(() => adminTokens.delete(token), 12 * 60 * 60 * 1000); // 12 hours
-  res.json({ token });
+  res.json({ token: makeToken() });
 });
 
 // ── admin: bookings ────────────────────────────────────────────────────────

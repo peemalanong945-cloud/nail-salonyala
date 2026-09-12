@@ -882,6 +882,12 @@ function ServiceRow({ svc, token, onChanged }) {
 export default function Admin() {
   const [token, setToken] = useState(() => localStorage.getItem(TOKEN_KEY));
 
+  useEffect(() => {
+    const handler = () => setToken(null);
+    window.addEventListener('admin-unauthorized', handler);
+    return () => window.removeEventListener('admin-unauthorized', handler);
+  }, []);
+
   if (!token) return <Login onLogin={setToken} />;
   return <Dashboard token={token} onLogout={() => setToken(null)} />;
 }

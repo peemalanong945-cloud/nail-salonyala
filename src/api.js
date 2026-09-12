@@ -4,6 +4,10 @@ async function json(url, options) {
     ...options,
   });
   const data = await res.json().catch(() => ({}));
+  if (res.status === 401) {
+    localStorage.removeItem('nail_admin_token');
+    window.dispatchEvent(new Event('admin-unauthorized'));
+  }
   if (!res.ok) throw new Error(data.error || 'เกิดข้อผิดพลาด');
   return data;
 }
