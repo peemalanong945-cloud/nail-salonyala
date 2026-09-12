@@ -79,6 +79,17 @@ export default function Contact() {
             </div>
           </article>
         </div>
+
+        <div className="mt-10 overflow-hidden rounded-3xl bg-white p-2 shadow-sm ring-1 ring-plum-100">
+          <iframe
+            title="แผนที่ร้าน Nail & Salon"
+            src="https://maps.google.com/maps?q=3%2F1%20%E0%B8%95%E0%B8%B3%E0%B8%9A%E0%B8%A5%E0%B8%AA%E0%B8%B0%E0%B9%80%E0%B8%95%E0%B8%87%20%E0%B8%AD%E0%B8%B3%E0%B9%80%E0%B8%A0%E0%B8%AD%E0%B9%80%E0%B8%A1%E0%B8%B7%E0%B8%AD%E0%B8%87%E0%B8%A2%E0%B8%B0%E0%B8%A5%E0%B8%B2%20%E0%B8%88%E0%B8%B1%E0%B8%87%E0%B8%AB%E0%B8%A7%E0%B8%B1%E0%B8%94%E0%B8%A2%E0%B8%B0%E0%B8%A5%E0%B8%B2%2095000&t=m&z=16&ie=UTF8&output=embed"
+            loading="lazy"
+            allowFullScreen
+            referrerPolicy="no-referrer-when-downgrade"
+            className="h-[360px] w-full rounded-2xl border-0 sm:h-[420px]"
+          />
+        </div>
       </div>
     </section>
   );
