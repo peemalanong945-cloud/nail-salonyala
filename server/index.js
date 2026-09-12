@@ -286,12 +286,38 @@ app.post('/api/admin/test-line', requireAdmin, async (req, res) => {
 // ── admin: services CRUD ───────────────────────────────────────────────────
 app.put('/api/admin/services/:id', requireAdmin, (req, res) => {
   const { id } = req.params;
-  const { price, duration, active } = req.body;
+  const { name, icon, price, duration, active } = req.body;
   const svc = db.prepare('SELECT id FROM services WHERE id=?').get(id);
   if (!svc) return res.status(404).json({ error: 'ไม่พบบริการ' });
+  if (name !== undefined && String(name).trim()) {
+    db.prepare('UPDATE services SET name=? WHERE id=?').run(String(name).trim(), id);
+  }
+  if (icon !== undefined) db.prepare('UPDATE services SET icon=? WHERE id=?').run(icon, id);
   if (price !== undefined) db.prepare('UPDATE services SET price=? WHERE id=?').run(Number(price), id);
   if (duration !== undefined) db.prepare('UPDATE services SET duration=? WHERE id=?').run(duration, id);
   if (active !== undefined) db.prepare('UPDATE services SET active=? WHERE id=?').run(active ? 1 : 0, id);
+  res.json({ message: 'ok' });
+});
+
+app.post('/api/admin/services', requireAdmin, (req, res) => {
+  const { name, icon, price, duration } = req.body;
+  if (!String(name || '').trim()) return res.status(400).json({ error: 'กรุณากรอกชื่อบริการ' });
+  const id = `svc-${Date.now()}`;
+  db.prepare(
+    'INSERT INTO services (id, name, price, duration, icon, popular, active) VALUES (?,?,?,?,?,0,1)'
+  ).run(id, String(name).trim(), Number(price || 0), String(duration || '60 นาที'), String(icon || '💅'));
+  res.json(db.prepare('SELECT * FROM services WHERE id=?').get(id));
+});
+
+app.delete('/api/admin/services/:id', requireAdmin, (req, res) => {
+  const { id } = req.params;
+  const svc = db.prepare('SELECT id FROM services WHERE id=?').get(id);
+  if (!svc) return res.status(404).json({ error: 'ไม่พบบริการ' });
+  const used = db.prepare('SELECT COUNT(*) AS n FROM bookings WHERE service_id=?').get(id).n;
+  if (used > 0) {
+    return res.status(400).json({ error: 'บริการนี้มีคิวอ้างอิงอยู่ กรุณาใช้ "ซ่อน" แทนการลบ' });
+  }
+  db.prepare('DELETE FROM services WHERE id=?').run(id);
   res.json({ message: 'ok' });
 });
 

@@ -149,8 +149,12 @@ function Dashboard({ token, onLogout }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [status, view]);
 
-  useEffect(() => {
+  const loadServices = () => {
     apiAdmin.services(token).then(setServices).catch(() => {});
+  };
+
+  useEffect(() => {
+    loadServices();
     apiAdmin
       .lineStatus(token)
       .then((s) => setLineConfigured(s.configured))
@@ -507,25 +511,49 @@ function Dashboard({ token, onLogout }) {
         <SettingsCard token={token} settings={settings} setSettings={setSettings} />
 
         <div className="mt-8 rounded-3xl bg-white p-6 shadow-sm ring-1 ring-plum-100">
-          <h2 className="font-display text-xl font-bold text-plum-900">
-            📋 จัดการราคาบริการ
-          </h2>
-          <p className="mt-1 text-sm text-plum-500">
-            ราคาและเวลาที่แก้ไขจะแสดงบนหน้าเว็บทันที
-          </p>
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <h2 className="font-display text-xl font-bold text-plum-900">
+                📋 จัดการราคาบริการ
+              </h2>
+              <p className="mt-1 text-sm text-plum-500">
+                เพิ่ม แก้ไข หรือซ่อนบริการได้ที่นี่ — บริการที่ซ่อนจะไม่แสดงบนหน้าเว็บ
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={async () => {
+                try {
+                  await apiAdmin.createService(token, {
+                    name: "บริการใหม่",
+                    icon: "💅",
+                    price: 0,
+                    duration: "60 นาที",
+                  });
+                  loadServices();
+                } catch (e) {
+                  alert(e.message);
+                }
+              }}
+              className="rounded-full bg-gradient-to-r from-blush-500 to-plum-500 px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-blush-500/25 transition hover:scale-105"
+            >
+              ＋ เพิ่มบริการ
+            </button>
+          </div>
           <div className="mt-4 overflow-x-auto">
-            <table className="w-full min-w-[640px] text-left text-sm">
+            <table className="w-full min-w-[780px] text-left text-sm">
               <thead>
                 <tr className="text-xs uppercase text-plum-500">
                   <th className="pb-3">บริการ</th>
                   <th className="pb-3">ราคา (บาท)</th>
                   <th className="pb-3">เวลาที่ใช้</th>
                   <th className="pb-3">แสดงผล</th>
+                  <th className="pb-3">การจัดการ</th>
                 </tr>
               </thead>
               <tbody>
                 {services.map((s) => (
-                  <ServiceRow key={s.id} svc={s} token={token} />
+                  <ServiceRow key={s.id} svc={s} token={token} onChanged={loadServices} />
                 ))}
               </tbody>
             </table>
@@ -732,30 +760,65 @@ function SettingsForm({ token, settings, setSettings }) {
   );
 }
 
-function ServiceRow({ svc, token }) {
+function ServiceRow({ svc, token, onChanged }) {
+  const [name, setName] = useState(svc.name);
+  const [icon, setIcon] = useState(svc.icon);
   const [price, setPrice] = useState(svc.price);
   const [duration, setDuration] = useState(svc.duration);
   const [active, setActive] = useState(!!svc.active);
   const [saved, setSaved] = useState(false);
 
-  const save = async () => {
-    await apiAdmin.updateService(token, svc.id, {
-      price: Number(price),
-      duration,
-      active,
-    });
+  const save = async (overrides = {}) => {
+    try {
+      await apiAdmin.updateService(token, svc.id, {
+        name,
+        icon,
+        price: Number(price),
+        duration,
+        active,
+        ...overrides,
+      });
+    } catch (e) {
+      alert(e.message);
+      return false;
+    }
     setSaved(true);
     setTimeout(() => setSaved(false), 1500);
+    return true;
+  };
+
+  const remove = async () => {
+    if (!window.confirm(`ลบ "${svc.name}" ออกจากรายการใช่ไหม?`)) return;
+    try {
+      await apiAdmin.deleteService(token, svc.id);
+      onChanged?.();
+    } catch (e) {
+      alert(e.message);
+    }
   };
 
   return (
     <tr className="border-t border-plum-100">
       <td className="py-3">
-        <p className="font-semibold text-plum-900">
-          {svc.icon} {svc.name}
-        </p>
+        <div className="flex items-center gap-2">
+          <input
+            type="text"
+            value={icon}
+            onChange={(e) => setIcon(e.target.value)}
+            className="w-12 rounded-xl border-2 border-plum-100 px-2 py-1.5 text-center text-plum-900 outline-none focus:border-blush-400"
+            maxLength={4}
+            aria-label="ไอคอนบริการ"
+          />
+          <input
+            type="text"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            className="min-w-[180px] flex-1 rounded-xl border-2 border-plum-100 px-3 py-1.5 font-semibold text-plum-900 outline-none focus:border-blush-400"
+            aria-label="ชื่อบริการ"
+          />
+        </div>
         {svc.popular ? (
-          <span className="text-xs text-blush-500">🔥 ขายดี</span>
+          <span className="mt-1 inline-block text-xs text-blush-500">🔥 ขายดี</span>
         ) : null}
       </td>
       <td className="py-3">
@@ -779,7 +842,11 @@ function ServiceRow({ svc, token }) {
         <div className="flex items-center gap-2">
           <button
             type="button"
-            onClick={() => setActive((v) => !v)}
+            onClick={() => {
+              const next = !active;
+              setActive(next);
+              save({ active: next });
+            }}
             className={`h-6 w-11 rounded-full transition ${active ? "bg-emerald-500" : "bg-plum-200"}`}
             aria-label="เปิด/ปิดการแสดงผล"
           >
@@ -787,12 +854,24 @@ function ServiceRow({ svc, token }) {
               className={`block h-5 w-5 rounded-full bg-white shadow transition ${active ? "translate-x-5" : "translate-x-0.5"}`}
             />
           </button>
+          <span className="text-xs text-plum-500">{active ? "โชว์" : "ซ่อน"}</span>
+        </div>
+      </td>
+      <td className="py-3">
+        <div className="flex items-center gap-2">
           <button
             type="button"
             onClick={save}
             className="rounded-full bg-plum-800 px-3.5 py-1.5 text-xs font-semibold text-white transition hover:bg-plum-900"
           >
             {saved ? "บันทึกแล้ว ✓" : "บันทึก"}
+          </button>
+          <button
+            type="button"
+            onClick={remove}
+            className="rounded-full border-2 border-red-200 px-3.5 py-1.5 text-xs font-semibold text-red-500 transition hover:bg-red-50"
+          >
+            ลบ
           </button>
         </div>
       </td>

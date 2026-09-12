@@ -62,4 +62,15 @@ export const apiAdmin = {
       headers: { Authorization: `Bearer ${token}` },
       body: JSON.stringify(body),
     }),
+  createService: (token, body) =>
+    json('/api/admin/services', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}` },
+      body: JSON.stringify(body),
+    }),
+  deleteService: (token, id) =>
+    json(`/api/admin/services/${id}`, {
+      method: 'DELETE',
+      headers: { Authorization: `Bearer ${token}` },
+    }),
 };
