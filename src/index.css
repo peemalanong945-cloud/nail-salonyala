@@ -1,0 +1,57 @@
+@import "tailwindcss";
+
+@theme {
+  --color-blush-50: #fdf2f6;
+  --color-blush-100: #fce7ef;
+  --color-blush-200: #fbcfe0;
+  --color-blush-300: #f8a8c6;
+  --color-blush-400: #f472a6;
+  --color-blush-500: #eb4a87;
+  --color-blush-600: #d92a6b;
+  --color-blush-700: #bc1a56;
+  --color-blush-800: #9d1849;
+  --color-blush-900: #841942;
+
+  --color-plum-50: #faf7fb;
+  --color-plum-100: #f3edf6;
+  --color-plum-200: #e8dcee;
+  --color-plum-300: #d5c0e0;
+  --color-plum-400: #b997cb;
+  --color-plum-500: #9c72b3;
+  --color-plum-600: #815697;
+  --color-plum-700: #6a457c;
+  --color-plum-800: #593c67;
+  --color-plum-900: #4b3456;
+
+  --font-display: "Playfair Display", Georgia, serif;
+  --font-body: "Inter", system-ui, sans-serif;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: var(--font-body);
+  background-color: var(--color-blush-50);
+  color: var(--color-plum-900);
+}
+
+::selection {
+  background-color: var(--color-blush-300);
+  color: var(--color-plum-900);
+}
+
+@keyframes float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-12px);
+  }
+}
+
+.animate-float {
+  animation: float 6s ease-in-out infinite;
+}
