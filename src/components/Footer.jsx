@@ -1,12 +1,33 @@
+import { useLocation, useNavigate } from "react-router-dom";
+
 const quickLinks = [
-  { href: "#services", label: "บริการ" },
-  { href: "#booking", label: "จองคิว" },
-  { href: "#gallery", label: "ผลงาน" },
-  { href: "#reviews", label: "รีวิว" },
-  { href: "#about", label: "เกี่ยวกับเรา" },
+  { href: "/", label: "หน้าหลัก" },
+  { href: "/booking", label: "จองคิว" },
+  { href: "/#services", label: "บริการ" },
+  { href: "/#gallery", label: "ผลงาน" },
+  { href: "/#reviews", label: "รีวิว" },
+  { href: "/#about", label: "เกี่ยวกับเรา" },
+  { href: "/#contact", label: "ติดต่อ" },
 ];
 
 export default function Footer() {
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  const go = (e, href) => {
+    e.preventDefault();
+    if (href.startsWith("/#")) {
+      const id = href.slice(2);
+      if (location.pathname === "/") {
+        document.getElementById(id)?.scrollIntoView({ behavior: "smooth" });
+      } else {
+        navigate("/", { state: { scrollTo: id } });
+      }
+    } else {
+      navigate(href);
+    }
+  };
+
   return (
     <footer className="bg-plum-900 pt-16 pb-8 text-plum-200">
       <div className="mx-auto max-w-6xl px-5">
@@ -33,6 +54,7 @@ export default function Footer() {
                 <li key={link.href}>
                   <a
                     href={link.href}
+                    onClick={(e) => go(e, link.href)}
                     className="text-plum-300 transition hover:text-blush-400"
                   >
                     {link.label}

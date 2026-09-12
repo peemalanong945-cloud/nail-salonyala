@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import ShareButton from "./ShareButton";
 import { api } from "../api";
 
@@ -65,12 +66,12 @@ export default function Hero() {
             เพ้นท์ลาย ใช้ผลิตภัณฑ์คุณภาพ จองคิวออนไลน์ได้ตลอด 24 ชั่วโมง
           </p>
           <div className="mt-8 flex flex-wrap gap-4">
-            <a
-              href="#booking"
+            <Link
+              to="/booking"
               className="rounded-full bg-gradient-to-r from-blush-500 to-plum-500 px-7 py-3.5 font-semibold text-white shadow-xl shadow-blush-500/30 transition hover:scale-105 hover:shadow-blush-500/40"
             >
               จองคิวออนไลน์
-            </a>
+            </Link>
             <a
               href="#gallery"
               className="rounded-full border-2 border-plum-300 bg-white/60 px-7 py-3.5 font-semibold text-plum-800 backdrop-blur-sm transition hover:border-blush-400 hover:text-blush-600"
