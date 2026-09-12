@@ -65,23 +65,24 @@ export default function Hero() {
             ครบทุกความต้องการในเรื่องความสวยของมือและเท้า ทั้งทำเล็บเจล ต่อเล็บ
             เพ้นท์ลาย ใช้ผลิตภัณฑ์คุณภาพ จองคิวออนไลน์ได้ตลอด 24 ชั่วโมง
           </p>
-          <div className="mt-8 flex flex-wrap gap-4">
+
+          <div className="mt-8 flex flex-wrap items-center gap-3">
             <Link
               to="/booking"
-              className="rounded-full bg-gradient-to-r from-blush-500 to-plum-500 px-7 py-3.5 font-semibold text-white shadow-xl shadow-blush-500/30 transition hover:scale-105 hover:shadow-blush-500/40"
+              className="rounded-full bg-gradient-to-r from-blush-500 to-plum-500 px-8 py-4 text-base font-semibold text-white shadow-xl shadow-blush-500/30 transition hover:scale-105 hover:shadow-blush-500/40"
             >
               จองคิวออนไลน์
             </Link>
             <a
               href="#gallery"
-              className="rounded-full border-2 border-plum-300 bg-white/60 px-7 py-3.5 font-semibold text-plum-800 backdrop-blur-sm transition hover:border-blush-400 hover:text-blush-600"
+              className="rounded-full border-2 border-plum-300 bg-white/70 px-7 py-3.5 font-semibold text-plum-800 backdrop-blur-sm transition hover:border-blush-400 hover:text-blush-600"
             >
               ดูผลงาน
             </a>
             <ShareButton />
           </div>
 
-          <div className="mt-5 flex flex-wrap gap-2">
+          <div className="mt-6 flex flex-wrap items-center gap-2">
             {live ? (
               live.closed ? (
                 <span className="inline-flex items-center gap-2 rounded-full bg-white px-4 py-2 text-sm font-semibold text-red-500 shadow-sm ring-1 ring-red-100">
@@ -107,42 +108,53 @@ export default function Hero() {
             </span>
           </div>
 
-          <dl className="mt-10 flex gap-8">
+          <dl className="mt-10 flex gap-10 border-t border-blush-200/70 pt-6">
             {stats.map((s) => (
               <div key={s.label}>
-                <dt className="order-2 text-sm text-plum-600">{s.label}</dt>
                 <dd className="font-display text-2xl font-bold text-blush-600 sm:text-3xl">
                   {s.value}
                 </dd>
+                <dt className="mt-0.5 text-sm text-plum-600">{s.label}</dt>
               </div>
             ))}
           </dl>
         </div>
 
         <div className="relative mx-auto w-full max-w-md">
-          <div className="relative aspect-[4/5] overflow-hidden rounded-[2.5rem] bg-gradient-to-br from-blush-300 via-blush-100 to-plum-200 shadow-2xl shadow-plum-400/30 ring-1 ring-white/60">
-            <div className="absolute inset-0 animate-float">
-              <div className="absolute top-10 right-10 grid h-20 w-20 place-items-center rounded-2xl bg-white/80 text-4xl shadow-lg backdrop-blur rotate-3">
-                💅
-              </div>
-              <div className="absolute top-40 left-8 grid h-16 w-16 place-items-center rounded-2xl bg-white/80 text-3xl shadow-lg backdrop-blur -rotate-6">
-                ✨
-              </div>
-              <div className="absolute bottom-16 right-6 grid h-24 w-24 place-items-center rounded-2xl bg-white/80 text-4xl shadow-lg backdrop-blur">
-                🌷
-              </div>
-              <div className="absolute bottom-48 left-16 grid h-14 w-14 place-items-center rounded-full bg-white/80 text-2xl shadow-lg backdrop-blur">
-                🎀
-              </div>
-            </div>
-            <div className="absolute inset-x-8 bottom-8 rounded-3xl bg-white/85 p-5 shadow-xl backdrop-blur">
+          <div className="relative aspect-[4/5] overflow-hidden rounded-[2.75rem] bg-gradient-to-br from-blush-300 via-blush-100 to-plum-200 shadow-2xl shadow-plum-400/30 ring-1 ring-white/70">
+            <img
+              src="/gallery/1.jpg"
+              alt="ผลงานทำเล็บของร้าน Nail & Salon"
+              loading="eager"
+              className="absolute inset-0 h-full w-full object-cover"
+              onError={(e) => {
+                e.currentTarget.style.display = "none";
+              }}
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-plum-900/50 via-transparent to-transparent" />
+
+            <span className="absolute top-5 right-5 grid h-16 w-16 rotate-6 place-items-center rounded-2xl bg-white/85 text-3xl shadow-lg backdrop-blur">
+              💅
+            </span>
+            <span className="absolute top-24 -left-3 grid h-12 w-12 -rotate-6 place-items-center rounded-2xl bg-white/85 text-2xl shadow-lg backdrop-blur">
+              ✨
+            </span>
+            <span className="absolute top-40 -right-2 grid h-12 w-12 rotate-3 place-items-center rounded-2xl bg-white/85 text-2xl shadow-lg backdrop-blur">
+              🌷
+            </span>
+
+            <div className="absolute inset-x-5 bottom-5 rounded-3xl bg-white/90 p-4 shadow-xl backdrop-blur">
               <div className="flex items-center gap-3">
-                <span className="grid h-12 w-12 place-items-center rounded-2xl bg-gradient-to-br from-blush-400 to-plum-500 text-xl text-white">
+                <span className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-gradient-to-br from-blush-400 to-plum-500 text-xl text-white">
                   👑
                 </span>
-                <div>
-                  <p className="font-semibold text-plum-900">ยินดีต้อนรับสู่ Nail & Salon</p>
-                  <p className="text-sm text-plum-600">ร้านทำเล็บใจกลางเมืองยะลา</p>
+                <div className="min-w-0">
+                  <p className="truncate font-semibold text-plum-900">
+                    ยินดีต้อนรับสู่ Nail & Salon
+                  </p>
+                  <p className="truncate text-sm text-plum-600">
+                    ร้านทำเล็บใจกลางเมืองยะลา · โทร 063-981-9924
+                  </p>
                 </div>
               </div>
             </div>

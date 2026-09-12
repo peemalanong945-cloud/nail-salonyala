@@ -27,11 +27,21 @@ export default function About() {
       <div className="mx-auto max-w-6xl px-5">
         <div className="grid items-center gap-12 lg:grid-cols-2">
           <div className="relative">
-            <div className="aspect-square rounded-[2.5rem] bg-gradient-to-br from-blush-200 to-plum-300 shadow-xl ring-1 ring-white/60" />
-            <span className="absolute top-8 left-8 grid h-28 w-28 animate-float place-items-center rounded-3xl bg-white text-5xl shadow-lg">
+            <div className="aspect-square overflow-hidden rounded-[2.5rem] bg-gradient-to-br from-blush-200 to-plum-300 shadow-xl ring-1 ring-white/60">
+              <img
+                src="/gallery/6.jpg"
+                alt="บรรยากาศและผลงานในร้าน"
+                loading="lazy"
+                className="h-full w-full object-cover"
+                onError={(e) => {
+                  e.currentTarget.style.display = "none";
+                }}
+              />
+            </div>
+            <span className="absolute top-8 left-8 grid h-20 w-20 animate-float place-items-center rounded-3xl bg-white text-4xl shadow-lg">
               💖
             </span>
-            <span className="absolute bottom-10 right-8 grid h-24 w-24 animate-float place-items-center rounded-3xl bg-white text-4xl shadow-lg [animation-delay:1.5s]">
+            <span className="absolute bottom-10 right-8 grid h-16 w-16 animate-float place-items-center rounded-2xl bg-white text-3xl shadow-lg [animation-delay:1.5s]">
               🌸
             </span>
             <span className="absolute -bottom-6 left-1/2 -translate-x-1/2 rounded-full bg-gradient-to-r from-blush-500 to-plum-500 px-6 py-3 text-center text-sm font-semibold text-white shadow-xl">

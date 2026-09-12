@@ -2,12 +2,15 @@ import { useEffect } from "react";
 import { BrowserRouter, Route, Routes, useLocation } from "react-router-dom";
 import Navbar from "./components/Navbar";
 import Hero from "./components/Hero";
+import HowItWorks from "./components/HowItWorks";
 import Services from "./components/Services";
 import Gallery from "./components/Gallery";
 import Reviews from "./components/Reviews";
 import About from "./components/About";
+import CtaBanner from "./components/CtaBanner";
 import Contact from "./components/Contact";
 import Footer from "./components/Footer";
+import FloatingBookButton from "./components/FloatingBookButton";
 import Admin from "./pages/Admin";
 import BookingPage from "./pages/BookingPage";
 
@@ -29,13 +32,16 @@ function HomePage() {
       <Navbar />
       <main>
         <Hero />
+        <HowItWorks />
         <Services />
         <Gallery />
         <Reviews />
         <About />
+        <CtaBanner />
         <Contact />
       </main>
       <Footer />
+      <FloatingBookButton />
     </>
   );
 }
