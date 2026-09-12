@@ -3,9 +3,6 @@ import { useLocation, useNavigate } from "react-router-dom";
 const quickLinks = [
   { href: "/", label: "หน้าหลัก" },
   { href: "/booking", label: "จองคิว" },
-  { href: "/#services", label: "บริการ" },
-  { href: "/#gallery", label: "ผลงาน" },
-  { href: "/#reviews", label: "รีวิว" },
   { href: "/#about", label: "เกี่ยวกับเรา" },
   { href: "/#contact", label: "ติดต่อ" },
 ];

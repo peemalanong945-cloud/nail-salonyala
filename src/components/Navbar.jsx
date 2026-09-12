@@ -4,9 +4,6 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 const links = [
   { href: "/", label: "หน้าหลัก", match: "/" },
   { href: "/booking", label: "จองคิว", match: "/booking" },
-  { href: "/#services", label: "บริการ" },
-  { href: "/#gallery", label: "ผลงาน" },
-  { href: "/#reviews", label: "รีวิว" },
   { href: "/#about", label: "เกี่ยวกับเรา" },
   { href: "/#contact", label: "ติดต่อ" },
 ];

@@ -3,9 +3,6 @@ import { BrowserRouter, Route, Routes, useLocation } from "react-router-dom";
 import Navbar from "./components/Navbar";
 import Hero from "./components/Hero";
 import HowItWorks from "./components/HowItWorks";
-import Services from "./components/Services";
-import Gallery from "./components/Gallery";
-import Reviews from "./components/Reviews";
 import About from "./components/About";
 import CtaBanner from "./components/CtaBanner";
 import Contact from "./components/Contact";
@@ -33,9 +30,6 @@ function HomePage() {
       <main>
         <Hero />
         <HowItWorks />
-        <Services />
-        <Gallery />
-        <Reviews />
         <About />
         <CtaBanner />
         <Contact />
