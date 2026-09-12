@@ -55,3 +55,29 @@ body {
 .animate-float {
   animation: float 6s ease-in-out infinite;
 }
+
+/* ลายจุดนุ่มนวลพื้นบาง section */
+.dot-grid {
+  background-image: radial-gradient(var(--color-plum-200) 1.5px, transparent 1.5px);
+  background-size: 24px 24px;
+}
+
+/* scrollbar เรียบๆ */
+::-webkit-scrollbar {
+  width: 10px;
+}
+::-webkit-scrollbar-track {
+  background: var(--color-blush-50);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--color-plum-300);
+  border-radius: 999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-plum-400);
+}
+
+/* ป้องกัน text ล้นไอคอน gallery */
+img {
+  -webkit-tap-highlight-color: transparent;
+}

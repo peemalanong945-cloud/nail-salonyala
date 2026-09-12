@@ -12,21 +12,17 @@ const socials = [
   { label: "โทร", emoji: "📞", href: "tel:0639819924" },
 ];
 
+import SectionHeading from "./SectionHeading";
+
 export default function Contact() {
   return (
     <section id="contact" className="py-20 lg:py-28">
       <div className="mx-auto max-w-6xl px-5">
-        <div className="mx-auto max-w-2xl text-center">
-          <span className="text-sm font-semibold tracking-widest text-blush-500 uppercase">
-            ติดต่อเรา
-          </span>
-          <h2 className="mt-3 font-display text-3xl font-bold tracking-tight text-plum-900 sm:text-4xl">
-            ติดต่อหรือแวะมาทักทายได้เลย
-          </h2>
-          <p className="mt-4 text-plum-700">
-            มีคำถามอะไรทักถามได้เลย เรายินดีตอบทุกข้อสงสัย
-          </p>
-        </div>
+        <SectionHeading
+          eyebrow="ติดต่อเรา"
+          title="ติดต่อหรือแวะมาทักทายได้เลย"
+          sub="มีคำถามอะไรทักถามได้เลย เรายินดีตอบทุกข้อสงสัย"
+        />
 
         <div className="mt-14 grid gap-6 lg:grid-cols-3">
           {branches.map((branch) => (

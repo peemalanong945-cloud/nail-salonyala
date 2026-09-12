@@ -21,6 +21,8 @@ const highlights = [
   },
 ];
 
+import SectionHeading from "./SectionHeading";
+
 export default function About() {
   return (
     <section id="about" className="py-20 lg:py-28">
@@ -50,17 +52,11 @@ export default function About() {
           </div>
 
           <div>
-            <span className="text-sm font-semibold tracking-widest text-blush-500 uppercase">
-              เกี่ยวกับเรา
-            </span>
-            <h2 className="mt-3 font-display text-3xl font-bold tracking-tight text-plum-900 sm:text-4xl">
-              ขอต้อนรับสู่ Nail & Salon
-            </h2>
-            <p className="mt-4 leading-relaxed text-plum-700">
-              เราเริ่มต้นจากความรักในงานเล็บและความฝันที่จะสร้างร้านที่อบอุ่น
-              เหมือนบ้าน จุดมุ่งหมายของเราคือทำให้ทุกคนที่มาได้ผ่อนคลาย
-              และกลับไปพร้อมกับรอยยิ้มและเล็บที่สวยงามที่สุด
-            </p>
+            <SectionHeading
+              eyebrow="เกี่ยวกับเรา"
+              title="ขอต้อนรับสู่ Nail & Salon"
+              sub="เราเริ่มต้นจากความรักในงานเล็บและความฝันที่จะสร้างร้านที่อบอุ่นเหมือนบ้าน จุดมุ่งหมายของเราคือทำให้ทุกคนที่มาได้ผ่อนคลาย และกลับไปพร้อมกับรอยยิ้มและเล็บที่สวยงามที่สุด"
+              />
             <p className="mt-3 leading-relaxed text-plum-700">
               ทุกบริการเลือกสรรมาเพื่อคุณอย่างพิถีพิถัน เรามุ่งมั่นพัฒนาฝีมืออยู่เสมอ
               เพื่อให้ทุกครั้งที่มาใช้บริการ คุณมั่นใจได้ว่าออกจากร้านไปพร้อมกับความสวย

@@ -1,4 +1,5 @@
 import { reviews } from "../data";
+import SectionHeading from "./SectionHeading";
 
 function Stars({ count }) {
   return (
@@ -19,17 +20,12 @@ export default function Reviews() {
       className="bg-gradient-to-b from-plum-900 to-plum-800 py-20 lg:py-28"
     >
       <div className="mx-auto max-w-6xl px-5">
-        <div className="mx-auto max-w-2xl text-center">
-          <span className="text-sm font-semibold tracking-widest text-blush-300 uppercase">
-            ลูกค้าพูดถึงเรา
-          </span>
-          <h2 className="mt-3 font-display text-3xl font-bold tracking-tight text-white sm:text-4xl">
-            รีวิวจากลูกค้าจริง
-          </h2>
-          <p className="mt-4 text-plum-200">
-            รับรองได้ด้วยความพึงพอใจของลูกค้าที่มากกว่า 1,200 คน
-          </p>
-        </div>
+        <SectionHeading
+          tone="dark"
+          eyebrow="ลูกค้าพูดถึงเรา"
+          title="รีวิวจากลูกค้าจริง"
+          sub="รับรองได้ด้วยความพึงพอใจของลูกค้าที่มากกว่า 1,200 คน"
+        />
 
         <div className="mt-14 grid gap-6 lg:grid-cols-3">
           {reviews.map((review) => (

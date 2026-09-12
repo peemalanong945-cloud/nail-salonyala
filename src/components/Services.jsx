@@ -1,22 +1,16 @@
 import { Link } from "react-router-dom";
 import { services } from "../data";
+import SectionHeading from "./SectionHeading";
 
 export default function Services() {
   return (
     <section id="services" className="pb-20 lg:pb-28">
       <div className="mx-auto max-w-6xl px-5">
-        <div className="mx-auto max-w-2xl text-center">
-          <span className="text-sm font-semibold tracking-widest text-blush-500 uppercase">
-            จองคิวออนไลน์
-          </span>
-          <h2 className="mt-3 font-display text-3xl font-bold tracking-tight text-plum-900 sm:text-4xl">
-            บริการทั้งหมดของเรา
-          </h2>
-          <p className="mt-4 text-plum-700">
-            เลือกบริการที่ใช่ แล้วจองคิวได้เลย เรามีทีมงานมืออาชีพพร้อมดูแล
-            ความสวยของคุณในทุกวัน
-          </p>
-        </div>
+        <SectionHeading
+          eyebrow="จองคิวออนไลน์"
+          title="บริการทั้งหมดของเรา"
+          sub="เลือกบริการที่ใช่ แล้วจองคิวได้เลย เรามีทีมงานมืออาชีพพร้อมดูแลความสวยของคุณในทุกวัน"
+        />
 
         <div className="mt-14 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
           {services.map((service) => (
