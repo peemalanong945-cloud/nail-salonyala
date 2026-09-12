@@ -1,23 +1,15 @@
 const branches = [
   {
-    name: "สาขาสยาม",
-    address: "ชั้น 2 ห้างสยาม ทาวเวอร์ 989 ถนนพระราม 1 เขตปทุมวัน กรุงเทพฯ 10330",
+    name: "สาขาเมืองยะลา",
+    address: "3/1 ตำบลสะเตง อำเภอเมืองยะลา จังหวัดยะลา 95000",
     hours: "ทุกวัน 09:00 - 20:00 น. (หยุดวันอาทิตย์)",
-    phone: "02-123-4567",
-  },
-  {
-    name: "สาขาทองหล่อ",
-    address: "ซอยสุขุมวิท 55 แขวงคลองตันเหนือ เขตวัฒนา กรุงเทพฯ 10110",
-    hours: "ทุกวัน 09:00 - 20:00 น. (หยุดวันอาทิตย์)",
-    phone: "02-765-4321",
+    phone: "063-981-9924",
   },
 ];
 
 const socials = [
-  { label: "Facebook", emoji: "📘", href: "#" },
-  { label: "Instagram", emoji: "📸", href: "#" },
-  { label: "Line", emoji: "💬", href: "#" },
-  { label: "TikTok", emoji: "🎵", href: "#" },
+  { label: "Line", emoji: "💬", href: "https://line.me/R/ti/p/~nd2627" },
+  { label: "โทร", emoji: "📞", href: "tel:0639819924" },
 ];
 
 export default function Contact() {

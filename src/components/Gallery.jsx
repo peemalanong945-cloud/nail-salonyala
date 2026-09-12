@@ -24,7 +24,7 @@ export default function Gallery() {
         </div>
 
         <p className="mt-10 text-center text-sm text-plum-600">
-          ตัวอย่างผลงานจริงของร้าน ดูได้จริงที่สาขาทั้ง 2 แห่ง · เปลี่ยนรูปได้โดยวางไฟล์ลง{" "}
+          ตัวอย่างผลงานจริงของร้าน · เปลี่ยนรูปได้โดยวางไฟล์ลง{" "}
           <code className="rounded bg-white px-1.5 py-0.5 text-xs text-blush-600 ring-1 ring-blush-100">
             public/gallery/
           </code>

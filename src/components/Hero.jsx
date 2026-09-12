@@ -140,8 +140,8 @@ export default function Hero() {
                   👑
                 </span>
                 <div>
-                  <p className="font-semibold text-plum-900">จัดอันดับร้านทำเล็บ Top 10</p>
-                  <p className="text-sm text-plum-600">กรุงเทพมหานครปี 2026</p>
+                  <p className="font-semibold text-plum-900">ยินดีต้อนรับสู่ Nail & Salon</p>
+                  <p className="text-sm text-plum-600">ร้านทำเล็บใจกลางเมืองยะลา</p>
                 </div>
               </div>
             </div>

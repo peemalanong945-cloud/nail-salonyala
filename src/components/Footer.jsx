@@ -47,9 +47,9 @@ export default function Footer() {
               ติดต่อเรา
             </h3>
             <ul className="mt-4 space-y-2 text-sm text-plum-300">
-              <li>โทร: 02-123-4567</li>
-              <li>Line ID: @nailsalon</li>
-              <li>อีเมล: hello@nailsalon.co.th</li>
+              <li>โทร: 063-981-9924</li>
+              <li>Line ID: nd2627</li>
+              <li>ที่อยู่: 3/1 ตำบลสะเตง อ.เมืองยะลา จ.ยะลา 95000</li>
               <li>เปิดทุกวัน 09:00 - 20:00 น. (หยุดวันอาทิตย์)</li>
             </ul>
             <a
