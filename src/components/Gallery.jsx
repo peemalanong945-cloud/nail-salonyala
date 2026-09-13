@@ -1,18 +1,29 @@
 import { useEffect, useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import { gallery } from "../data";
 import SectionHeading from "./SectionHeading";
 
-export default function Gallery() {
+export default function Gallery({ preview = false, limit = 4 }) {
+  const navigate = useNavigate();
+  const items = preview ? gallery.slice(0, limit) : gallery;
   const [openIndex, setOpenIndex] = useState(null);
+
+  const open = (i) => {
+    if (preview) {
+      navigate("/works");
+      return;
+    }
+    setOpenIndex(i);
+  };
 
   useEffect(() => {
     if (openIndex === null) return;
     const onKey = (e) => {
       if (e.key === "Escape") setOpenIndex(null);
       if (e.key === "ArrowRight")
-        setOpenIndex((i) => (i + 1) % gallery.length);
+        setOpenIndex((i) => (i + 1) % items.length);
       if (e.key === "ArrowLeft")
-        setOpenIndex((i) => (i - 1 + gallery.length) % gallery.length);
+        setOpenIndex((i) => (i - 1 + items.length) % items.length);
     };
     window.addEventListener("keydown", onKey);
     document.body.style.overflow = "hidden";
@@ -20,34 +31,58 @@ export default function Gallery() {
       window.removeEventListener("keydown", onKey);
       document.body.style.overflow = "";
     };
-  }, [openIndex]);
+  }, [openIndex, items.length]);
 
   return (
-    <section id="gallery" className="pb-20 lg:pb-28">
+    <section
+      id="gallery"
+      className={
+        preview
+          ? "pb-6 pt-4 lg:pb-10"
+          : "pb-20 pt-10 lg:pb-28 lg:pt-14"
+      }
+    >
       <div className="mx-auto max-w-6xl px-5">
         <SectionHeading
           eyebrow="ผลงานของเรา"
-          title="ไอเดียลายเล็บสวยๆ"
-          sub="เลือกลายที่ชอบ แล้วแจ้งช่างได้เลย หรือให้ช่างออกแบบให้ใหม่ก็ได้"
+          title={preview ? "ผลงานบางส่วน" : "ไอเดียลายเล็บสวยๆ"}
+          sub={
+            preview
+              ? undefined
+              : "เลือกลายที่ชอบ แล้วแจ้งช่างได้เลย หรือให้ช่างออกแบบให้ใหม่ก็ได้"
+          }
         />
 
-        <div className="mt-14 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
-          {gallery.map((item, i) => (
-            <GalleryCard key={item.id} item={item} index={i} onOpen={() => setOpenIndex(i)} />
+        <div className="mt-12 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
+          {items.map((item, i) => (
+            <GalleryCard key={item.id} item={item} index={i} onOpen={() => open(i)} />
           ))}
         </div>
 
-        <p className="mt-10 text-center text-sm text-plum-600">
-          ผลงานจริงจากร้าน · แตะรูปเพื่อดูภาพใหญ่
-        </p>
+        {preview && (
+          <div className="mt-8 text-center">
+            <Link
+              to="/works"
+              className="inline-flex items-center gap-2 rounded-full bg-plum-800 px-7 py-3 text-sm font-semibold text-white shadow-lg transition hover:scale-105 hover:bg-plum-900"
+            >
+              ดูผลงานทั้งหมด ({gallery.length} รูป) →
+            </Link>
+          </div>
+        )}
 
-        {openIndex !== null && (
+        {!preview && (
+          <p className="mt-10 text-center text-sm text-plum-600">
+            ผลงานจริงจากร้าน · แตะรูปเพื่อดูภาพใหญ่
+          </p>
+        )}
+
+        {!preview && openIndex !== null && (
           <Lightbox
-            item={gallery[openIndex]}
+            item={items[openIndex]}
             index={openIndex}
             onClose={() => setOpenIndex(null)}
-            onPrev={() => setOpenIndex((openIndex - 1 + gallery.length) % gallery.length)}
-            onNext={() => setOpenIndex((openIndex + 1) % gallery.length)}
+            onPrev={() => setOpenIndex((openIndex - 1 + items.length) % items.length)}
+            onNext={() => setOpenIndex((openIndex + 1) % items.length)}
           />
         )}
       </div>

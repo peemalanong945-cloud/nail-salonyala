@@ -3,6 +3,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 const quickLinks = [
   { href: "/", label: "หน้าหลัก" },
   { href: "/price", label: "ราคา" },
+  { href: "/works", label: "ผลงาน" },
   { href: "/booking", label: "จองคิว" },
   { href: "/#about", label: "เกี่ยวกับเรา" },
   { href: "/#contact", label: "ติดต่อ" },

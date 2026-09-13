@@ -12,6 +12,7 @@ import FloatingBookButton from "./components/FloatingBookButton";
 import Admin from "./pages/Admin";
 import BookingPage from "./pages/BookingPage";
 import PriceListPage from "./pages/PriceListPage";
+import WorksPage from "./pages/WorksPage";
 
 function HomePage() {
   const location = useLocation();
@@ -33,7 +34,7 @@ function HomePage() {
         <Hero />
         <HowItWorks />
         <About />
-        <Gallery />
+        <Gallery preview />
         <CtaBanner />
         <Contact />
       </main>
@@ -50,6 +51,7 @@ function App() {
         <Route path="/" element={<HomePage />} />
         <Route path="/booking" element={<BookingPage />} />
         <Route path="/price" element={<PriceListPage />} />
+        <Route path="/works" element={<WorksPage />} />
         <Route path="/admin" element={<Admin />} />
       </Routes>
     </BrowserRouter>
