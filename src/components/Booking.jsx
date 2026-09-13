@@ -104,7 +104,7 @@ export default function Booking() {
     setError("");
     setSubmitting(true);
     try {
-      const result = await api.createBooking(form);
+      const result = await api.createBooking({ ...form, serviceId: form.service });
       setConfirmed(result);
     } catch (err) {
       setError(err.message);
