@@ -310,7 +310,7 @@ export default function Booking() {
                   </span>
                 </div>
                 <div className="flex items-center gap-1.5">
-                  {["เลือกบริการ", "เลือกวัน-เวลา", "ข้อมูลติดต่อ"].map((label, i) => {
+                  {["เลือกบริการ", "เลือกวันเวลา", "ข้อมูลติดต่อ"].map((label, i) => {
                     const done =
                       (i === 0 && Boolean(form.service)) ||
                       (i === 1 && Boolean(form.time)) ||

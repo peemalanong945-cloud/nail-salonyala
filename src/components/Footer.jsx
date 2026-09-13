@@ -62,7 +62,8 @@ export default function Footer() {
                 {c.label}: <span className="text-white/90">{c.value}</span>
               </a>
             ))}
-            <p>📍 3/1 ต.สะเตง อ.เมืองยะลา · ⏰ 09:00-20:00 (หยุด อา.)</p>
+            <p className="text-xs">📍 3/1 ต.สะเตง อ.เมืองยะลา 95000</p>
+            <p className="text-xs">⏰ 09:00-20:00 (หยุด อา.)</p>
           </div>
         </div>
 
