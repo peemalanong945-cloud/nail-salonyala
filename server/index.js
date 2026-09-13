@@ -214,7 +214,7 @@ app.patch('/api/bookings/:ref/cancel', async (req, res) => {
   const b = db.prepare('SELECT * FROM bookings WHERE ref=? AND phone LIKE ?').get(ref, `%${phone.replace(/\D/g, '')}%`);
   if (!b) return res.status(404).json({ error: 'ไม่พบคิวนี้' });
   if (b.status === 'completed') return res.status(400).json({ error: 'คิวนี้จบแล้ว ไม่สามารถยกเลิกได้' });
-  db.prepare('UPDATE bookings SET status="cancelled" WHERE id=?').run(b.id);
+  db.prepare("UPDATE bookings SET status='cancelled' WHERE id=?").run(b.id);
   const svc = db.prepare('SELECT name, icon FROM services WHERE id=?').get(b.service_id);
   await sendLineNotify(
     `🗑️ คิวถูกยกเลิก\n${svc?.icon ?? '💅'} ${svc?.name ?? ''}\n👤 ${b.name} (${b.phone})\n📅 ${b.date} ${b.time}\n🔢 ${b.ref}`,

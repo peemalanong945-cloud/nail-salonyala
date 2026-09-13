@@ -4,6 +4,15 @@ import { categoryOrder } from "../data";
 
 const today = new Date().toISOString().split("T")[0];
 
+function nextOpenDate(closedDays = [0]) {
+  const d = new Date();
+  for (let i = 0; i < 8; i++) {
+    if (!closedDays.includes(d.getDay())) break;
+    d.setDate(d.getDate() + 1);
+  }
+  return d.toISOString().split("T")[0];
+}
+
 function fmtPrice(service) {
   if (!service) return "";
   if (service.price_range) return `${service.price_range} บาท`;
@@ -29,7 +38,7 @@ export default function Booking() {
   const [confirmed, setConfirmed] = useState(null);
   const [form, setForm] = useState({
     service: "",
-    date: today,
+    date: nextOpenDate([0]),
     time: "",
     name: "",
     phone: "",
@@ -56,7 +65,14 @@ export default function Booking() {
         setActiveCat((prev) => (prev && catsOf(list).includes(prev) ? prev : first || ""));
       })
       .catch((e) => setError(e.message));
-    api.settings().then(setSettings).catch(() => {});
+    api.settings().then((s) => {
+      setSettings(s);
+      setForm((f) => {
+        const closed = s.closedDays || [0];
+        const dow = new Date(f.date + "T00:00:00").getDay();
+        return closed.includes(dow) ? { ...f, date: nextOpenDate(closed), time: "" } : f;
+      });
+    }).catch(() => {});
   }, [setActiveCat]);
 
   const cats = catsOf(services);
@@ -532,9 +548,19 @@ export default function Booking() {
                 >
                   {submitting ? "กำลังจอง..." : "ยืนยันการจองคิว"}
                 </button>
-                <p className="text-center text-xs text-plum-500">
-                  กดยืนยัน = ตกลงให้ติดต่อกลับเพื่อยืนยันคิว
-                </p>
+                {isClosedDay(form.date) ? (
+                  <p className="text-center text-xs font-medium text-red-500">
+                    ⛔ วันที่เลือกเป็นวันหยุดของร้าน กรุณาเลือกวันเปิดทำการ
+                  </p>
+                ) : !validated ? (
+                  <p className="text-center text-xs text-plum-500">
+                    ยังเลือกบริการ / เวลา หรือกรอกชื่อ-เบอร์ไม่ครบก่อนนะครับ
+                  </p>
+                ) : (
+                  <p className="text-center text-xs text-plum-500">
+                    กดยืนยัน = ตกลงให้ติดต่อกลับเพื่อยืนยันคิว
+                  </p>
+                )}
               </form>
             )}
           </div>
