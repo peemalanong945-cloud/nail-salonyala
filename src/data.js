@@ -70,16 +70,20 @@ export const categoryOrder = [
   "ล้าง/ถอด",
 ];
 
-export const gallery = [
-  { id: 1, title: "French Ombré", emoji: "🤍", gradient: "from-blush-200 to-plum-200", image: "/gallery/1.jpg" },
-  { id: 2, title: "Glitter Chrome", emoji: "💖", gradient: "from-blush-300 to-blush-100", image: "/gallery/2.jpg" },
-  { id: 3, title: "Minimal Nude", emoji: "🌷", gradient: "from-plum-200 to-blush-100", image: "/gallery/3.jpg" },
-  { id: 4, title: "Cherry Pop", emoji: "🍒", gradient: "from-blush-400 to-blush-200", image: "/gallery/4.jpg" },
-  { id: 5, title: "Marble Art", emoji: "🪞", gradient: "from-plum-300 to-blush-200", image: "/gallery/5.jpg" },
-  { id: 6, title: "Pastel Dream", emoji: "🦋", gradient: "from-blush-200 to-plum-300", image: "/gallery/6.jpg" },
-  { id: 7, title: "Gold Flakes", emoji: "✨", gradient: "from-blush-100 to-plum-200", image: "/gallery/7.jpg" },
-  { id: 8, title: "Floral Touch", emoji: "🌸", gradient: "from-blush-300 to-plum-200", image: "/gallery/8.jpg" },
+const galleryGradients = [
+  "from-blush-200 to-plum-200",
+  "from-blush-300 to-blush-100",
+  "from-plum-200 to-blush-100",
+  "from-blush-400 to-blush-200",
 ];
+
+export const gallery = Array.from({ length: 66 }, (_, i) => ({
+  id: i + 1,
+  title: `ผลงานชิ้นที่ ${i + 1}`,
+  emoji: "💅",
+  gradient: galleryGradients[i % galleryGradients.length],
+  image: `/gallery/${i + 1}.jpg`,
+}));
 
 export const reviews = [
   {

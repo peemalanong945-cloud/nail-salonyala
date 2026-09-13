@@ -38,10 +38,7 @@ export default function Gallery() {
         </div>
 
         <p className="mt-10 text-center text-sm text-plum-600">
-          ตัวอย่างผลงานจริงของร้าน · แตะรูปเพื่อดูภาพใหญ่ · เปลี่ยนรูปได้โดยวางไฟล์ลง{" "}
-          <code className="rounded bg-white px-1.5 py-0.5 text-xs text-blush-600 ring-1 ring-blush-100">
-            public/gallery/
-          </code>
+          ผลงานจริงจากร้าน · แตะรูปเพื่อดูภาพใหญ่
         </p>
 
         {openIndex !== null && (
