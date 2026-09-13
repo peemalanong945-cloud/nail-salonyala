@@ -943,7 +943,10 @@ export default function Admin() {
   const [token, setToken] = useState(() => localStorage.getItem(TOKEN_KEY));
 
   useEffect(() => {
-    const handler = () => setToken(null);
+    const handler = () => {
+      localStorage.removeItem(TOKEN_KEY);
+      setToken(null);
+    };
     window.addEventListener('admin-unauthorized', handler);
     return () => window.removeEventListener('admin-unauthorized', handler);
   }, []);
