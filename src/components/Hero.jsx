@@ -3,12 +3,6 @@ import { Link } from "react-router-dom";
 import ShareButton from "./ShareButton";
 import { api } from "../api";
 
-const stats = [
-  { value: "8+", label: "ปีประสบการณ์" },
-  { value: "1,200+", label: "ลูกค้าประจำ" },
-  { value: "4.9", label: "คะแนนรีวิว" },
-];
-
 export default function Hero() {
   const [today, setToday] = useState(new Date().toISOString().split("T")[0]);
   const [live, setLive] = useState(null);
@@ -40,30 +34,29 @@ export default function Hero() {
     window.addEventListener("focus", onFocus);
     return () => window.removeEventListener("focus", onFocus);
   }, []);
+
   return (
     <section
       id="home"
-      className="relative overflow-hidden bg-gradient-to-b from-blush-100 via-blush-50 to-blush-50 pt-28 pb-16 lg:pt-36 lg:pb-24"
+      className="relative overflow-hidden bg-gradient-to-b from-blush-100 via-blush-50 to-white pt-28 pb-20 lg:pt-36 lg:pb-28"
     >
       <div className="pointer-events-none absolute -top-24 -right-24 h-80 w-80 rounded-full bg-blush-300/40 blur-3xl" />
       <div className="pointer-events-none absolute top-40 -left-32 h-96 w-96 rounded-full bg-plum-300/30 blur-3xl" />
 
       <div className="relative mx-auto grid max-w-6xl items-center gap-12 px-5 lg:grid-cols-2">
         <div>
-          <span className="inline-flex items-center gap-2 rounded-full bg-white px-4 py-1.5 text-xs font-semibold text-blush-600 shadow-sm">
-            <span className="h-2 w-2 rounded-full bg-blush-500" />
-            เปิดทุกวัน 09:00 - 20:00 น. (หยุดวันอาทิตย์)
+          <span className="inline-flex items-center gap-2 rounded-full bg-white/80 px-4 py-1.5 text-xs font-semibold text-blush-600 shadow-sm ring-1 ring-blush-100 backdrop-blur">
+            💅 ร้านทำเล็บน่ารัก · ยะลา
           </span>
-          <h1 className="mt-5 font-display text-4xl leading-tight font-bold tracking-tight text-plum-900 sm:text-5xl lg:text-6xl">
+          <h1 className="mt-6 font-display text-4xl leading-tight font-bold tracking-tight text-plum-900 sm:text-5xl lg:text-6xl">
             งามปลายนิ้ว
             <br />
             <span className="bg-gradient-to-r from-blush-500 to-plum-500 bg-clip-text text-transparent">
               สวยแบบคุณ
             </span>
           </h1>
-          <p className="mt-5 max-w-md text-base leading-relaxed text-plum-700 sm:text-lg">
-            ครบทุกความต้องการในเรื่องความสวยของมือและเท้า ทั้งทำเล็บเจล ต่อเล็บ
-            เพ้นท์ลาย ใช้ผลิตภัณฑ์คุณภาพ จองคิวออนไลน์ได้ตลอด 24 ชั่วโมง
+          <p className="mt-5 max-w-md text-lg leading-relaxed text-plum-600">
+            จองคิวไม่กี่คลิก แล้วมาพักผ่อนให้สวยได้ในแบบของคุณ
           </p>
 
           <div className="mt-8 flex flex-wrap items-center gap-3">
@@ -82,7 +75,7 @@ export default function Hero() {
             <ShareButton />
           </div>
 
-          <div className="mt-6 flex flex-wrap items-center gap-2">
+          <div className="mt-7">
             {live ? (
               live.closed ? (
                 <span className="inline-flex items-center gap-2 rounded-full bg-white px-4 py-2 text-sm font-semibold text-red-500 shadow-sm ring-1 ring-red-100">
@@ -103,21 +96,7 @@ export default function Hero() {
                 กำลังโหลดคิวสด...
               </span>
             )}
-            <span className="inline-flex items-center gap-2 rounded-full bg-white px-4 py-2 text-sm font-medium text-plum-600 shadow-sm ring-1 ring-plum-100">
-              🔄 อัปเดตอัตโนมัติทุก 45 วินาที
-            </span>
           </div>
-
-          <dl className="mt-10 flex gap-10 border-t border-blush-200/70 pt-6">
-            {stats.map((s) => (
-              <div key={s.label}>
-                <dd className="font-display text-2xl font-bold text-blush-600 sm:text-3xl">
-                  {s.value}
-                </dd>
-                <dt className="mt-0.5 text-sm text-plum-600">{s.label}</dt>
-              </div>
-            ))}
-          </dl>
         </div>
 
         <div className="relative mx-auto w-full max-w-md">
@@ -131,33 +110,13 @@ export default function Hero() {
                 e.currentTarget.style.display = "none";
               }}
             />
-            <div className="absolute inset-0 bg-gradient-to-t from-plum-900/50 via-transparent to-transparent" />
-
-            <span className="absolute top-5 right-5 grid h-16 w-16 rotate-6 place-items-center rounded-2xl bg-white/85 text-3xl shadow-lg backdrop-blur">
+            <div className="absolute inset-0 bg-gradient-to-t from-plum-900/30 via-transparent to-transparent" />
+            <span className="absolute top-5 right-5 grid h-14 w-14 rotate-6 place-items-center rounded-2xl bg-white/85 text-2xl shadow-lg backdrop-blur">
               💅
             </span>
-            <span className="absolute top-24 -left-3 grid h-12 w-12 -rotate-6 place-items-center rounded-2xl bg-white/85 text-2xl shadow-lg backdrop-blur">
+            <span className="absolute -bottom-4 left-6 grid h-12 w-12 -rotate-6 place-items-center rounded-2xl bg-white/85 text-xl shadow-lg backdrop-blur">
               ✨
             </span>
-            <span className="absolute top-40 -right-2 grid h-12 w-12 rotate-3 place-items-center rounded-2xl bg-white/85 text-2xl shadow-lg backdrop-blur">
-              🌷
-            </span>
-
-            <div className="absolute inset-x-5 bottom-5 rounded-3xl bg-white/90 p-4 shadow-xl backdrop-blur">
-              <div className="flex items-center gap-3">
-                <span className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-gradient-to-br from-blush-400 to-plum-500 text-xl text-white">
-                  👑
-                </span>
-                <div className="min-w-0">
-                  <p className="truncate font-semibold text-plum-900">
-                    ยินดีต้อนรับสู่ Nail & Salon
-                  </p>
-                  <p className="truncate text-sm text-plum-600">
-                    ร้านทำเล็บใจกลางเมืองยะลา · โทร 063-981-9924
-                  </p>
-                </div>
-              </div>
-            </div>
           </div>
         </div>
       </div>
