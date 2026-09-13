@@ -1,7 +1,15 @@
 import { useEffect, useState } from "react";
 import { api } from "../api";
+import { categoryOrder } from "../data";
 
 const today = new Date().toISOString().split("T")[0];
+
+function fmtPrice(service) {
+  if (!service) return "";
+  if (service.price_range) return `${service.price_range} บาท`;
+  const p = Number(service.price || 0);
+  return p === 0 ? "ฟรี" : `${p.toLocaleString("th-TH")} บาท`;
+}
 
 const statusLabel = {
   pending: "รอยืนยัน",
@@ -13,6 +21,7 @@ const statusLabel = {
 export default function Booking() {
   const [services, setServices] = useState([]);
   const [settings, setSettings] = useState(null);
+  const [activeCat, setActiveCat] = useState("");
   const [slots, setSlots] = useState([]);
   const [slotsLoading, setSlotsLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -31,13 +40,27 @@ export default function Booking() {
   const [myBookings, setMyBookings] = useState(null);
   const [checkMsg, setCheckMsg] = useState("");
 
+  const catsOf = (list) =>
+    [...new Set(list.map((s) => s.category).filter(Boolean))].sort(
+      (a, b) =>
+        (categoryOrder.indexOf(a) === -1 ? 99 : categoryOrder.indexOf(a)) -
+        (categoryOrder.indexOf(b) === -1 ? 99 : categoryOrder.indexOf(b))
+    );
+
   useEffect(() => {
     api
       .services()
-      .then(setServices)
+      .then((list) => {
+        setServices(list);
+        const first = catsOf(list)[0];
+        setActiveCat((prev) => (prev && catsOf(list).includes(prev) ? prev : first || ""));
+      })
       .catch((e) => setError(e.message));
     api.settings().then(setSettings).catch(() => {});
-  }, []);
+  }, [setActiveCat]);
+
+  const cats = catsOf(services);
+  const selectedSvc = services.find((s) => s.id === form.service) || null;
 
   useEffect(() => {
     let ignore = false;
@@ -250,7 +273,7 @@ export default function Booking() {
                 </p>
                 <div className="mt-4 rounded-2xl bg-blush-50 px-5 py-3 text-sm text-blush-700">
                   {confirmed.service?.icon} {confirmed.service?.name} · ราคา{" "}
-                  {confirmed.service?.price.toLocaleString("th-TH")} บาท
+                  {fmtPrice(confirmed.service)}
                 </div>
                 <button
                   type="button"
@@ -262,9 +285,35 @@ export default function Booking() {
               </div>
             ) : (
               <form onSubmit={handleSubmit} className="space-y-5">
-                <h3 className="font-display text-xl font-bold text-plum-900">
-                  กรอกข้อมูลเพื่อจองคิว
-                </h3>
+                <div className="mb-1 flex items-center justify-between">
+                  <h3 className="font-display text-xl font-bold text-plum-900">
+                    กรอกข้อมูลเพื่อจองคิว
+                  </h3>
+                  <span className="rounded-full bg-plum-50 px-3 py-1 text-xs font-semibold text-plum-600 ring-1 ring-plum-100">
+                    3 ขั้นตอน
+                  </span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  {["เลือกบริการ", "เลือกวัน-เวลา", "ข้อมูลติดต่อ"].map((label, i) => {
+                    const done =
+                      (i === 0 && Boolean(form.service)) ||
+                      (i === 1 && Boolean(form.time)) ||
+                      (i === 2 && form.name.trim() && form.phone.trim());
+                    return (
+                      <div key={label} className="flex flex-1 items-center gap-1.5">
+                        <div
+                          className={`flex-1 rounded-full py-1 text-center text-[11px] font-semibold transition ${
+                            done ? "bg-gradient-to-r from-blush-400 to-plum-500 text-white" : "bg-plum-50 text-plum-500"
+                          }`}
+                        >
+                          {done ? "✓ " : `${i + 1}. `}
+                          {label}
+                        </div>
+                        {i < 2 && <span className="text-plum-300">›</span>}
+                      </div>
+                    );
+                  })}
+                </div>
 
                 {error && (
                   <p className="rounded-2xl bg-red-50 px-4 py-3 text-sm font-medium text-red-600 ring-1 ring-red-100">
@@ -273,28 +322,94 @@ export default function Booking() {
                 )}
 
                 <div>
-                  <label htmlFor="service" className="mb-1.5 block text-sm font-medium text-plum-800">
-                    เลือกบริการ *
-                  </label>
-                  <select
-                    id="service"
-                    required
-                    value={form.service}
-                    onChange={update("service")}
-                    className={inputClass}
-                  >
-                    <option value="">-- เลือกบริการ --</option>
-                    {services.map((s) => (
-                      <option key={s.id} value={s.id}>
-                        {s.name} ({s.price.toLocaleString("th-TH")} บาท)
-                      </option>
-                    ))}
-                  </select>
+                  <div className="mb-3 flex items-center gap-2">
+                    <span className="grid h-7 w-7 place-items-center rounded-full bg-gradient-to-br from-blush-400 to-plum-500 text-xs font-bold text-white">
+                      1
+                    </span>
+                    <label className="text-sm font-semibold text-plum-800">เลือกบริการ *</label>
+                  </div>
+
+                  <div className="mb-3 flex flex-wrap gap-2">
+                    {cats.map((cat) => {
+                      const active = activeCat === cat;
+                      const count = services.filter((s) => s.category === cat).length;
+                      return (
+                        <button
+                          key={cat}
+                          type="button"
+                          onClick={() => setActiveCat(cat)}
+                          className={`rounded-full px-4 py-2 text-sm font-semibold transition ${
+                            active
+                              ? "bg-plum-700 text-white shadow-lg shadow-plum-700/25"
+                              : "bg-plum-50 text-plum-700 ring-1 ring-plum-100 hover:bg-plum-100"
+                          }`}
+                        >
+                          {cat}
+                          <span className={`ml-1.5 text-xs ${active ? "text-blush-200" : "text-plum-400"}`}>
+                            {count}
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  <div className="max-h-64 space-y-2 overflow-y-auto pr-1">
+                    {cats.length === 0 && (
+                      <p className="rounded-2xl bg-plum-50 p-4 text-center text-sm text-plum-500">
+                        กำลังโหลดรายการบริการ...
+                      </p>
+                    )}
+                    {services
+                      .filter((s) => s.category === activeCat)
+                      .map((s) => {
+                        const active = form.service === s.id;
+                        return (
+                          <button
+                            key={s.id}
+                            type="button"
+                            onClick={() => setForm((f) => ({ ...f, service: s.id }))}
+                            className={`flex w-full items-center gap-3 rounded-2xl border-2 p-3 text-left transition ${
+                              active
+                                ? "border-blush-400 bg-blush-50 ring-4 ring-blush-200/40"
+                                : "border-plum-100 bg-white hover:border-plum-200 hover:bg-plum-50/50"
+                            }`}
+                          >
+                            <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-white text-2xl shadow-sm ring-1 ring-plum-100">
+                              {s.icon}
+                            </span>
+                            <span className="min-w-0 flex-1">
+                              <span className="block text-sm font-semibold text-plum-900">{s.name}</span>
+                              {s.description && (
+                                <span className="mt-0.5 block text-xs leading-snug text-plum-500">
+                                  {s.description}
+                                </span>
+                              )}
+                            </span>
+                            <span className="shrink-0 text-right">
+                              <span className="block text-sm font-bold text-blush-600">{fmtPrice(s)}</span>
+                              <span className="block text-xs text-plum-400">
+                                {s.duration || "60 นาที"}
+                              </span>
+                            </span>
+                            <span
+                              className={`ml-1 grid h-6 w-6 shrink-0 place-items-center rounded-full border-2 text-xs font-bold text-white transition ${
+                                active ? "border-blush-500 bg-blush-500" : "border-plum-200 bg-transparent"
+                              }`}
+                            >
+                              {active ? "✓" : ""}
+                            </span>
+                          </button>
+                        );
+                      })}
+                  </div>
                 </div>
 
                 <div className="grid gap-5 sm:grid-cols-2">
                   <div>
                     <label htmlFor="date" className="mb-1.5 block text-sm font-medium text-plum-800">
+                      <span className="mr-1 inline-grid h-5 w-5 place-items-center rounded-full bg-gradient-to-br from-blush-400 to-plum-500 text-[10px] font-bold text-white">
+                        2
+                      </span>
                       วันที่ *
                     </label>
                     <input
@@ -351,6 +466,9 @@ export default function Booking() {
                 <div className="grid gap-5 sm:grid-cols-2">
                   <div>
                     <label htmlFor="name" className="mb-1.5 block text-sm font-medium text-plum-800">
+                      <span className="mr-1 inline-grid h-5 w-5 place-items-center rounded-full bg-gradient-to-br from-blush-400 to-plum-500 text-[10px] font-bold text-white">
+                        3
+                      </span>
                       ชื่อ-นามสกุล *
                     </label>
                     <input
@@ -393,6 +511,19 @@ export default function Booking() {
                     className={inputClass}
                   />
                 </div>
+
+                {selectedSvc && form.time && (
+                  <div className="flex items-center gap-3 rounded-2xl bg-gradient-to-r from-blush-500 to-plum-500 p-4 text-white shadow-lg shadow-blush-500/25">
+                    <span className="text-2xl">{selectedSvc.icon}</span>
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate font-semibold">{selectedSvc.name}</p>
+                      <p className="text-xs text-white/85">
+                        {form.date} · {form.time} น. · {selectedSvc.duration || "60 นาที"}
+                      </p>
+                    </div>
+                    <span className="shrink-0 text-lg font-bold">{fmtPrice(selectedSvc)}</span>
+                  </div>
+                )}
 
                 <button
                   type="submit"

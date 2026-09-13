@@ -4,19 +4,7 @@ import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 import SectionHeading from "../components/SectionHeading";
 import { api } from "../api";
-
-const order = [
-  "สีเจล",
-  "ต่อขนตา",
-  "ผม",
-  "สปามือ/เท้า",
-  "ขน/คิ้ว",
-  "ป้ายกระดานดำ",
-  "ดีไซน์",
-  "ต่อเล็บ",
-  "สปา 7 ขั้นตอน",
-  "ล้าง/ถอด",
-];
+import { categoryOrder } from "../data";
 
 function fmt(price, range) {
   if (range) return range;
@@ -33,7 +21,7 @@ export default function PriceListPage() {
   }, []);
 
   const cats = [...new Set(services.map((s) => s.category).filter(Boolean))].sort(
-    (a, b) => (order.indexOf(a) === -1 ? 99 : order.indexOf(a)) - (order.indexOf(b) === -1 ? 99 : order.indexOf(b))
+    (a, b) => (categoryOrder.indexOf(a) === -1 ? 99 : categoryOrder.indexOf(a)) - (categoryOrder.indexOf(b) === -1 ? 99 : categoryOrder.indexOf(b))
   );
 
   return (

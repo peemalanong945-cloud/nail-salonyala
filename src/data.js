@@ -57,6 +57,19 @@ export const services = [
   },
 ];
 
+export const categoryOrder = [
+  "สีเจล",
+  "ต่อขนตา",
+  "ผม",
+  "สปามือ/เท้า",
+  "ขน/คิ้ว",
+  "ป้ายกระดานดำ",
+  "ดีไซน์",
+  "ต่อเล็บ",
+  "สปา 7 ขั้นตอน",
+  "ล้าง/ถอด",
+];
+
 export const gallery = [
   { id: 1, title: "French Ombré", emoji: "🤍", gradient: "from-blush-200 to-plum-200", image: "/gallery/1.jpg" },
   { id: 2, title: "Glitter Chrome", emoji: "💖", gradient: "from-blush-300 to-blush-100", image: "/gallery/2.jpg" },
