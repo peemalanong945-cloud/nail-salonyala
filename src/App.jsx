@@ -8,9 +8,11 @@ import Gallery from "./components/Gallery";
 import CtaBanner from "./components/CtaBanner";
 import Contact from "./components/Contact";
 import Footer from "./components/Footer";
+import Seo from "./components/Seo";
 import FloatingBookButton from "./components/FloatingBookButton";
 import Admin from "./pages/Admin";
 import BookingPage from "./pages/BookingPage";
+import NotFound from "./pages/NotFound";
 import PriceListPage from "./pages/PriceListPage";
 import WorksPage from "./pages/WorksPage";
 
@@ -47,12 +49,14 @@ function HomePage() {
 function App() {
   return (
     <BrowserRouter>
+      <Seo />
       <Routes>
         <Route path="/" element={<HomePage />} />
         <Route path="/booking" element={<BookingPage />} />
         <Route path="/price" element={<PriceListPage />} />
         <Route path="/works" element={<WorksPage />} />
         <Route path="/admin" element={<Admin />} />
+        <Route path="*" element={<NotFound />} />
       </Routes>
     </BrowserRouter>
   );

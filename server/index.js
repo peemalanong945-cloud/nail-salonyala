@@ -381,8 +381,7 @@ app.get('/api/admin/stats', requireAdmin, (req, res) => {
 const dist = path.join(__dirname, '..', 'dist');
 app.use(express.static(dist));
 const indexPath = path.join(dist, 'index.html');
-app.get(/^\/(?:works|price|booking|admin)(?:\/.*)?$/, (_req, res) => res.sendFile(indexPath));
-app.get('/', (_req, res) => res.sendFile(indexPath));
+app.get(/^\/(?!api\/).*/u, (_req, res) => res.sendFile(indexPath));
 
 app.listen(PORT, () => {
   console.log(`💅 Nail Salon API → http://localhost:${PORT}`);
