@@ -10,6 +10,7 @@ import Footer from "./components/Footer";
 import FloatingBookButton from "./components/FloatingBookButton";
 import Admin from "./pages/Admin";
 import BookingPage from "./pages/BookingPage";
+import PriceListPage from "./pages/PriceListPage";
 
 function HomePage() {
   const location = useLocation();
@@ -46,6 +47,7 @@ function App() {
       <Routes>
         <Route path="/" element={<HomePage />} />
         <Route path="/booking" element={<BookingPage />} />
+        <Route path="/price" element={<PriceListPage />} />
         <Route path="/admin" element={<Admin />} />
       </Routes>
     </BrowserRouter>

@@ -313,12 +313,20 @@ app.put('/api/admin/services/:id', requireAdmin, (req, res) => {
 });
 
 app.post('/api/admin/services', requireAdmin, (req, res) => {
-  const { name, icon, price, duration } = req.body;
+  const { name, icon, price, duration, category, price_range } = req.body;
   if (!String(name || '').trim()) return res.status(400).json({ error: 'กรุณากรอกชื่อบริการ' });
   const id = `svc-${Date.now()}`;
   db.prepare(
-    'INSERT INTO services (id, name, price, duration, icon, popular, active) VALUES (?,?,?,?,?,0,1)'
-  ).run(id, String(name).trim(), Number(price || 0), String(duration || '60 นาที'), String(icon || '💅'));
+    'INSERT INTO services (id, name, price, duration, icon, popular, active, category, price_range) VALUES (?,?,?,?,?,0,1,?,?)'
+  ).run(
+    id,
+    String(name).trim(),
+    Number(price || 0),
+    String(duration || '60 นาที'),
+    String(icon || '💅'),
+    String(category || ''),
+    String(price_range || '')
+  );
   res.json(db.prepare('SELECT * FROM services WHERE id=?').get(id));
 });
 
@@ -373,7 +381,7 @@ app.get('/api/admin/stats', requireAdmin, (req, res) => {
 const dist = path.join(__dirname, '..', 'dist');
 app.use(express.static(dist));
 const indexPath = path.join(dist, 'index.html');
-app.get(/^\/(?:booking|admin)(?:\/.*)?$/, (_req, res) => res.sendFile(indexPath));
+app.get(/^\/(?:price|booking|admin)(?:\/.*)?$/, (_req, res) => res.sendFile(indexPath));
 app.get('/', (_req, res) => res.sendFile(indexPath));
 
 app.listen(PORT, () => {

@@ -73,12 +73,12 @@ export default function Hero() {
             >
               จองคิวออนไลน์
             </Link>
-            <a
-              href="#about"
+            <Link
+              to="/price"
               className="rounded-full border-2 border-plum-300 bg-white/70 px-7 py-3.5 font-semibold text-plum-800 backdrop-blur-sm transition hover:border-blush-400 hover:text-blush-600"
             >
-              รู้จักเรา
-            </a>
+              ดูราคา
+            </Link>
             <ShareButton />
           </div>
 

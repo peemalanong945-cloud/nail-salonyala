@@ -22,6 +22,12 @@ export default function CtaBanner() {
             >
               จองคิวเลย
             </Link>
+            <Link
+              to="/price"
+              className="rounded-full border-2 border-white/60 px-7 py-3.5 font-semibold text-white backdrop-blur transition hover:bg-white/15"
+            >
+              ดูราคาเต็ม
+            </Link>
             <a
               href="tel:0639819924"
               className="rounded-full border-2 border-white/60 px-7 py-3.5 font-semibold text-white backdrop-blur transition hover:bg-white/15"
