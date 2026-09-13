@@ -201,7 +201,12 @@ function Dashboard({ token, onLogout }) {
       .catch(() => setBookings([]));
 
   const changeStatus = async (id, next) => {
-    await apiAdmin.setStatus(token, id, next);
+    try {
+      await apiAdmin.setStatus(token, id, next);
+    } catch (e) {
+      window.alert(`เปลี่ยนสถานะไม่สำเร็จ: ${e.message}`);
+      return;
+    }
     fetchBookings();
     apiAdmin.stats(token).then(setStats).catch(() => {});
   };
@@ -419,6 +424,11 @@ function Dashboard({ token, onLogout }) {
               weekBookings={weekBookings}
               weekRange={weekRange()}
               today={today}
+              onStatus={async (id, next) => {
+                await changeStatus(id, next);
+                const { from, to } = weekRange();
+                apiAdmin.weekBookings(token, from, to).then(setWeekBookings).catch(() => {});
+              }}
               onReload={() => {
                 const { from, to } = weekRange();
                 apiAdmin.weekBookings(token, from, to).then(setWeekBookings).catch(() => {});
@@ -572,7 +582,7 @@ function minToTime(min) {
   return `${String(Math.floor(min / 60)).padStart(2, "0")}:${String(min % 60).padStart(2, "0")}`;
 }
 
-function WeekCalendar({ settings, weekBookings, weekRange, today }) {
+function WeekCalendar({ settings, weekBookings, weekRange, today, onStatus }) {
   if (!settings) return null;
 
   const s = settings;
@@ -621,15 +631,27 @@ function WeekCalendar({ settings, weekBookings, weekRange, today }) {
                 return (
                   <div
                     key={d.date + time}
+                    onClick={() => {
+                      if (!b || !onStatus) return;
+                      const next =
+                        b.status === "pending"
+                          ? "confirmed"
+                          : b.status === "confirmed"
+                            ? "completed"
+                            : null;
+                      if (next) onStatus(b.id, next);
+                    }}
                     className={`min-h-[56px] rounded-xl border-2 p-1.5 ${
                       closed
                         ? "border-red-100 bg-red-50"
                         : b
-                          ? b.status === "confirmed"
-                            ? "border-emerald-200 bg-emerald-50"
-                            : b.status === "completed"
-                              ? "border-blush-200 bg-blush-50 opacity-70"
-                              : "border-amber-200 bg-amber-50"
+                          ? `cursor-pointer ${
+                              b.status === "confirmed"
+                                ? "border-emerald-200 bg-emerald-50 hover:border-emerald-400"
+                                : b.status === "completed"
+                                  ? "border-blush-200 bg-blush-50 opacity-70"
+                                  : "border-amber-200 bg-amber-50 hover:border-amber-400"
+                            }`
                           : "border-plum-100 bg-plum-50/40"
                     }`}
                   >
@@ -642,6 +664,44 @@ function WeekCalendar({ settings, weekBookings, weekRange, today }) {
                         <span className={`mt-1 inline-block rounded-full px-1.5 py-px text-[10px] font-semibold ${statusColor[b.status]}`}>
                           {statusLabel[b.status]}
                         </span>
+                        {b.status !== "completed" && b.status !== "cancelled" && (
+                          <div className="mt-1 flex gap-1">
+                            {b.status === "pending" && (
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  onStatus?.(b.id, "confirmed");
+                                }}
+                                className="rounded-full bg-emerald-500 px-2 py-px text-[9px] font-bold text-white transition hover:bg-emerald-600"
+                              >
+                                ✓ ยืนยัน
+                              </button>
+                            )}
+                            {b.status === "confirmed" && (
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  onStatus?.(b.id, "completed");
+                                }}
+                                className="rounded-full bg-blush-500 px-2 py-px text-[9px] font-bold text-white transition hover:bg-blush-600"
+                              >
+                                💅 เสร็จ
+                              </button>
+                            )}
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                onStatus?.(b.id, "cancelled");
+                              }}
+                              className="rounded-full bg-white/90 px-2 py-px text-[9px] font-bold text-red-500 ring-1 ring-red-200 transition hover:bg-red-50"
+                            >
+                              ยกเลิก
+                            </button>
+                          </div>
+                        )}
                       </div>
                     ) : closed ? (
                       <span className="text-[10px] text-red-400">ปิด</span>
