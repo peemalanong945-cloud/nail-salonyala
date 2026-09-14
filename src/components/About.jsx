@@ -1,7 +1,15 @@
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import { api } from "../api";
 import SectionHeading from "./SectionHeading";
 
 export default function About() {
+  const [closedText, setClosedText] = useState("อาทิตย์");
+  useEffect(() => {
+    api.settings().then((s) => {
+      if (s.closedDaysText) setClosedText(s.closedDaysText);
+    }).catch(() => {});
+  }, []);
   return (
     <section id="about" className="py-16 lg:py-24">
       <div className="mx-auto max-w-6xl px-5">
@@ -30,7 +38,7 @@ export default function About() {
               sub="ร้านทำเล็บน่ารักใจกลางเมืองยะลา ที่มาถึงแล้วได้พักผ่อน กลับไปพร้อมกับเล็บสวยในแบบของตัวเอง"
             />
             <p className="mt-5 max-w-lg leading-relaxed text-plum-600">
-              เปิดบริการทุกวัน 09:00 - 20:00 น. (หยุดวันอาทิตย์)
+              เปิดบริการทุกวัน 09:00 - 20:00 น. (หยุด{closedText})
             </p>
             <div className="mt-7 flex flex-wrap gap-3">
               <Link

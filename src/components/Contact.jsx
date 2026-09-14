@@ -1,32 +1,39 @@
+import { useEffect, useState } from "react";
+import { api } from "../api";
 import SectionHeading from "./SectionHeading";
 
-const info = [
-  {
-    label: "เวลาเปิด",
-    value: "09:00 - 20:00 น.",
-    icon: "⏰",
-    note: "หยุดวันอาทิตย์",
-  },
-  {
-    label: "โทรศัพท์",
-    value: "063-981-9924",
-    icon: "📞",
-    href: "tel:0639819924",
-  },
-  {
-    label: "Line",
-    value: "nd2627",
-    icon: "💬",
-    href: "https://line.me/R/ti/p/~nd2627",
-  },
-  {
-    label: "ที่อยู่",
-    value: "3/1 ตำบลสะเตง อำเภอเมืองยะลา ยะลา 95000",
-    icon: "📍",
-  },
-];
-
 export default function Contact() {
+  const [closedText, setClosedText] = useState("อาทิตย์");
+  useEffect(() => {
+    api.settings().then((s) => {
+      if (s.closedDaysText) setClosedText(s.closedDaysText);
+    }).catch(() => {});
+  }, []);
+  const info = [
+    {
+      label: "เวลาเปิด",
+      value: "09:00 - 20:00 น.",
+      icon: "⏰",
+      note: `หยุด${closedText}`,
+    },
+    {
+      label: "โทรศัพท์",
+      value: "063-981-9924",
+      icon: "📞",
+      href: "tel:0639819924",
+    },
+    {
+      label: "Line",
+      value: "nd2627",
+      icon: "💬",
+      href: "https://line.me/R/ti/p/~nd2627",
+    },
+    {
+      label: "ที่อยู่",
+      value: "3/1 ตำบลสะเตง อำเภอเมืองยะลา ยะลา 95000",
+      icon: "📍",
+    },
+  ];
   return (
     <section id="contact" className="py-16 lg:py-24">
       <div className="mx-auto max-w-6xl px-5">
