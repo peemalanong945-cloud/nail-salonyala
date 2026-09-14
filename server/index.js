@@ -4,7 +4,7 @@ import cors from 'cors';
 import crypto from 'node:crypto';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import db from './db.js';
+import db, { initDb, USE_PG } from './db.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
@@ -75,8 +75,8 @@ async function sendLineNotify(message) {
 // ── business settings ──────────────────────────────────────────────────────
 const DAY_NAMES = ['อาทิตย์', 'จันทร์', 'อังคาร', 'พุธ', 'พฤหัส', 'ศุกร์', 'เสาร์'];
 
-function getSettings() {
-  const rows = db.prepare('SELECT key, value FROM settings').all();
+async function getSettings() {
+  const rows = await db.all('SELECT key, value FROM settings');
   const s = Object.fromEntries(rows.map((r) => [r.key, r.value]));
   return {
     openTime: s.open_time ?? '09:00',
@@ -85,14 +85,27 @@ function getSettings() {
     closedDays: (s.closed_days ?? '0').split(',').map(Number).filter((n) => n >= 0 && n <= 6),
   };
 }
-function saveSettings({ openTime, closeTime, slotMinutes, closedDays }) {
-  const set = db.prepare(
-    "INSERT INTO settings (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value=excluded.value",
+async function saveSettings({ openTime, closeTime, slotMinutes, closedDays }) {
+  await db.run(
+    'INSERT INTO settings (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value=excluded.value',
+    'open_time',
+    openTime,
   );
-  set.run('open_time', openTime);
-  set.run('close_time', closeTime);
-  set.run('slot_minutes', String(slotMinutes));
-  set.run('closed_days', closedDays.join(','));
+  await db.run(
+    'INSERT INTO settings (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value=excluded.value',
+    'close_time',
+    closeTime,
+  );
+  await db.run(
+    'INSERT INTO settings (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value=excluded.value',
+    'slot_minutes',
+    String(slotMinutes),
+  );
+  await db.run(
+    'INSERT INTO settings (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value=excluded.value',
+    'closed_days',
+    closedDays.join(','),
+  );
 }
 function timeToMin(t) {
   const [h, m] = t.split(':').map(Number);
@@ -103,8 +116,8 @@ function minToTime(min) {
   const m = min % 60;
   return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
 }
-function generateSlots(date) {
-  const s = getSettings();
+async function generateSlots(date) {
+  const s = await getSettings();
   const dow = new Date(date + 'T00:00:00').getDay();
   if (s.closedDays.includes(dow)) return [];
   const open = timeToMin(s.openTime);
@@ -114,35 +127,35 @@ function generateSlots(date) {
   for (let t = open; t + s.slotMinutes <= close; t += s.slotMinutes) out.push(minToTime(t));
   return out;
 }
-const closedDaysText = (s = getSettings()) => {
-  if (s.closedDays.length === 0) return 'ทุกวัน';
+const closedDaysText = (s) => {
+  if (!s || s.closedDays.length === 0) return 'ทุกวัน';
   return `วัน${s.closedDays.map((d) => DAY_NAMES[d]).join(', ')}`;
 };
-const hoursText = (s = getSettings()) => `${s.openTime} - ${s.closeTime} น.`;
+const hoursText = (s) => `${s.openTime} - ${s.closeTime} น.`;
 
-app.get('/api/settings', (_req, res) => {
-  const s = getSettings();
+app.get('/api/settings', async (_req, res) => {
+  const s = await getSettings();
   res.json({ ...s, hoursText: hoursText(s), closedDaysText: closedDaysText(s), dayNames: DAY_NAMES });
 });
 
 // ── public: services ───────────────────────────────────────────────────────
-app.get('/api/services', (_req, res) => {
-  const rows = db.prepare('SELECT * FROM services WHERE active=1 ORDER BY popular DESC, name').all();
+app.get('/api/services', async (_req, res) => {
+  const rows = await db.all('SELECT * FROM services WHERE active=1 ORDER BY popular DESC, name');
   res.json(rows);
 });
-app.get('/api/services/all', (_req, res) => {
-  res.json(db.prepare('SELECT * FROM services ORDER BY id').all());
+app.get('/api/services/all', async (_req, res) => {
+  res.json(await db.all('SELECT * FROM services ORDER BY id'));
 });
 
 // ── public: available slots ────────────────────────────────────────────────
-app.get('/api/slots', (req, res) => {
+app.get('/api/slots', async (req, res) => {
   const date = req.query.date;
   if (!date) return res.status(400).json({ error: 'date required' });
-  const all = generateSlots(date);
-  const booked = db
-    .prepare("SELECT time FROM bookings WHERE date=? AND status IN ('pending','confirmed')")
-    .all(date)
-    .map((r) => r.time);
+  const all = await generateSlots(date);
+  const booked = (await db.all(
+    "SELECT time FROM bookings WHERE date=? AND status IN ('pending','confirmed')",
+    date,
+  )).map((r) => r.time);
   const now = new Date();
   const slots = all.filter((t) => {
     if (booked.includes(t)) return false;
@@ -163,26 +176,35 @@ app.post('/api/bookings', async (req, res) => {
   if (!serviceId || !date || !time || !name?.trim() || !phone?.trim()) {
     return res.status(400).json({ error: 'ข้อมูลไม่ครบ' });
   }
-  const s = getSettings();
+  const s = await getSettings();
   const dow = new Date(date + 'T00:00:00').getDay();
   if (s.closedDays.includes(dow)) {
     return res.status(400).json({ error: `วัน${DAY_NAMES[dow]}ร้านหยุด ไม่สามารถจองได้` });
   }
-  if (!generateSlots(date).includes(time)) return res.status(400).json({ error: 'เวลาไม่ถูกต้อง' });
+  if (!(await generateSlots(date)).includes(time)) return res.status(400).json({ error: 'เวลาไม่ถูกต้อง' });
   if (date < todayStr()) return res.status(400).json({ error: 'ไม่สามารถจองย้อนหลังได้' });
 
-  const svc = db.prepare('SELECT * FROM services WHERE id=? AND active=1').get(serviceId);
+  const svc = await db.get('SELECT * FROM services WHERE id=? AND active=1', serviceId);
   if (!svc) return res.status(400).json({ error: 'ไม่พบบริการนี้' });
 
-  const conflict = db
-    .prepare("SELECT id FROM bookings WHERE date=? AND time=? AND status IN ('pending','confirmed')")
-    .get(date, time);
+  const conflict = await db.get(
+    "SELECT id FROM bookings WHERE date=? AND time=? AND status IN ('pending','confirmed')",
+    date,
+    time,
+  );
   if (conflict) return res.status(409).json({ error: 'คิวนี้ถูกจองไปแล้ว กรุณาเลือกเวลาใหม่' });
 
   const ref = genRef();
-  db.prepare(
+  await db.run(
     'INSERT INTO bookings (ref, service_id, date, time, name, phone, note) VALUES (?,?,?,?,?,?,?)',
-  ).run(ref, serviceId, date, time, name.trim(), phone.trim(), note?.trim() || '');
+    ref,
+    serviceId,
+    date,
+    time,
+    name.trim(),
+    phone.trim(),
+    note?.trim() || '',
+  );
 
   const lineResult = await sendLineNotify(
     `💅 คิวใหม่!\n${svc.icon} ${svc.name}\n👤 ${name.trim()} (${phone.trim()})\n📅 ${date} ${time}\n🔢 ${ref}`,
@@ -192,17 +214,16 @@ app.post('/api/bookings', async (req, res) => {
 });
 
 // ── public: lookup bookings by phone ───────────────────────────────────────
-app.get('/api/bookings/lookup', (req, res) => {
+app.get('/api/bookings/lookup', async (req, res) => {
   const phone = (req.query.phone || '').replace(/\D/g, '');
   if (phone.length < 8) return res.status(400).json({ error: 'กรุณากรอกเบอร์โทรให้ถูกต้อง' });
-  const rows = db
-    .prepare(
-      `SELECT b.ref, b.date, b.time, b.status, b.note, b.created_at,
-              s.name AS service_name, s.icon, s.price
-       FROM bookings b JOIN services s ON b.service_id=s.id
-       WHERE b.phone LIKE ? ORDER BY b.date DESC, b.time DESC`,
-    )
-    .all(`%${phone}%`);
+  const rows = await db.all(
+    `SELECT b.ref, b.date, b.time, b.status, b.note, b.created_at,
+            s.name AS service_name, s.icon, s.price
+     FROM bookings b JOIN services s ON b.service_id=s.id
+     WHERE b.phone LIKE ? ORDER BY b.date DESC, b.time DESC`,
+    `%${phone}%`,
+  );
   res.json(rows);
 });
 
@@ -211,11 +232,11 @@ app.patch('/api/bookings/:ref/cancel', async (req, res) => {
   const { ref } = req.params;
   const { phone } = req.body;
   if (!phone) return res.status(400).json({ error: 'ต้องยืนยันด้วยเบอร์โทร' });
-  const b = db.prepare('SELECT * FROM bookings WHERE ref=? AND phone LIKE ?').get(ref, `%${phone.replace(/\D/g, '')}%`);
+  const b = await db.get('SELECT * FROM bookings WHERE ref=? AND phone LIKE ?', ref, `%${phone.replace(/\D/g, '')}%`);
   if (!b) return res.status(404).json({ error: 'ไม่พบคิวนี้' });
   if (b.status === 'completed') return res.status(400).json({ error: 'คิวนี้จบแล้ว ไม่สามารถยกเลิกได้' });
-  db.prepare("UPDATE bookings SET status='cancelled' WHERE id=?").run(b.id);
-  const svc = db.prepare('SELECT name, icon FROM services WHERE id=?').get(b.service_id);
+  await db.run("UPDATE bookings SET status='cancelled' WHERE id=?", b.id);
+  const svc = await db.get('SELECT name, icon FROM services WHERE id=?', b.service_id);
   await sendLineNotify(
     `🗑️ คิวถูกยกเลิก\n${svc?.icon ?? '💅'} ${svc?.name ?? ''}\n👤 ${b.name} (${b.phone})\n📅 ${b.date} ${b.time}\n🔢 ${b.ref}`,
   );
@@ -229,7 +250,7 @@ app.post('/api/admin/login', (req, res) => {
 });
 
 // ── admin: bookings ────────────────────────────────────────────────────────
-app.get('/api/admin/bookings', requireAdmin, (req, res) => {
+app.get('/api/admin/bookings', requireAdmin, async (req, res) => {
   const { date = todayStr(), status } = req.query;
   let sql = `SELECT b.*, s.name AS service_name, s.icon, s.price
              FROM bookings b JOIN services s ON b.service_id=s.id WHERE b.date=?`;
@@ -239,10 +260,10 @@ app.get('/api/admin/bookings', requireAdmin, (req, res) => {
     params.push(status);
   }
   sql += ' ORDER BY b.time';
-  res.json(db.prepare(sql).all(...params));
+  res.json(await db.all(sql, ...params));
 });
 
-app.get('/api/admin/bookings/all', requireAdmin, (req, res) => {
+app.get('/api/admin/bookings/all', requireAdmin, async (req, res) => {
   const { status } = req.query;
   let sql = `SELECT b.*, s.name AS service_name, s.icon, s.price
              FROM bookings b JOIN services s ON b.service_id=s.id WHERE 1=1`;
@@ -252,17 +273,19 @@ app.get('/api/admin/bookings/all', requireAdmin, (req, res) => {
     params.push(status);
   }
   sql += ' ORDER BY b.date DESC, b.time DESC LIMIT 500';
-  res.json(db.prepare(sql).all(...params));
+  res.json(await db.all(sql, ...params));
 });
 
-app.get('/api/admin/bookings/week', requireAdmin, (req, res) => {
+app.get('/api/admin/bookings/week', requireAdmin, async (req, res) => {
   const { from, to } = req.query;
   if (!from || !to) return res.status(400).json({ error: 'from/to required' });
-  const rows = db
-    .prepare(`SELECT b.*, s.name AS service_name, s.icon, s.price
-              FROM bookings b JOIN services s ON b.service_id=s.id
-              WHERE b.date BETWEEN ? AND ? ORDER BY b.date, b.time`)
-    .all(from, to);
+  const rows = await db.all(
+    `SELECT b.*, s.name AS service_name, s.icon, s.price
+     FROM bookings b JOIN services s ON b.service_id=s.id
+     WHERE b.date BETWEEN ? AND ? ORDER BY b.date, b.time`,
+    from,
+    to,
+  );
   res.json(rows);
 });
 
@@ -272,8 +295,11 @@ app.patch('/api/admin/bookings/:id', requireAdmin, async (req, res) => {
   if (!['pending', 'confirmed', 'completed', 'cancelled'].includes(status)) {
     return res.status(400).json({ error: 'status ไม่ถูกต้อง' });
   }
-  db.prepare('UPDATE bookings SET status=? WHERE id=?').run(status, Number(id));
-  const b = db.prepare('SELECT b.*, s.name AS service_name, s.icon FROM bookings b JOIN services s ON b.service_id=s.id WHERE b.id=?').get(Number(id));
+  await db.run('UPDATE bookings SET status=? WHERE id=?', status, Number(id));
+  const b = await db.get(
+    'SELECT b.*, s.name AS service_name, s.icon FROM bookings b JOIN services s ON b.service_id=s.id WHERE b.id=?',
+    Number(id),
+  );
   if (b) {
     const statusEmoji = { confirmed: '✅ ยืนยันคิว', completed: '💅 เสร็จแล้ว', cancelled: '🗑️ ยกเลิกคิว', pending: '⏳ รอยืนยัน' };
     await sendLineNotify(
@@ -297,57 +323,56 @@ app.post('/api/admin/test-line', requireAdmin, async (req, res) => {
 });
 
 // ── admin: services CRUD ───────────────────────────────────────────────────
-app.put('/api/admin/services/:id', requireAdmin, (req, res) => {
+app.put('/api/admin/services/:id', requireAdmin, async (req, res) => {
   const { id } = req.params;
   const { name, icon, price, duration, active } = req.body;
-  const svc = db.prepare('SELECT id FROM services WHERE id=?').get(id);
+  const svc = await db.get('SELECT id FROM services WHERE id=?', id);
   if (!svc) return res.status(404).json({ error: 'ไม่พบบริการ' });
   if (name !== undefined && String(name).trim()) {
-    db.prepare('UPDATE services SET name=? WHERE id=?').run(String(name).trim(), id);
+    await db.run('UPDATE services SET name=? WHERE id=?', String(name).trim(), id);
   }
-  if (icon !== undefined) db.prepare('UPDATE services SET icon=? WHERE id=?').run(icon, id);
-  if (price !== undefined) db.prepare('UPDATE services SET price=? WHERE id=?').run(Number(price), id);
-  if (duration !== undefined) db.prepare('UPDATE services SET duration=? WHERE id=?').run(duration, id);
-  if (active !== undefined) db.prepare('UPDATE services SET active=? WHERE id=?').run(active ? 1 : 0, id);
+  if (icon !== undefined) await db.run('UPDATE services SET icon=? WHERE id=?', icon, id);
+  if (price !== undefined) await db.run('UPDATE services SET price=? WHERE id=?', Number(price), id);
+  if (duration !== undefined) await db.run('UPDATE services SET duration=? WHERE id=?', duration, id);
+  if (active !== undefined) await db.run('UPDATE services SET active=? WHERE id=?', active ? 1 : 0, id);
   res.json({ message: 'ok' });
 });
 
-app.post('/api/admin/services', requireAdmin, (req, res) => {
+app.post('/api/admin/services', requireAdmin, async (req, res) => {
   const { name, icon, price, duration, category, price_range } = req.body;
   if (!String(name || '').trim()) return res.status(400).json({ error: 'กรุณากรอกชื่อบริการ' });
   const id = `svc-${Date.now()}`;
-  db.prepare(
-    'INSERT INTO services (id, name, price, duration, icon, popular, active, category, price_range) VALUES (?,?,?,?,?,0,1,?,?)'
-  ).run(
+  await db.run(
+    'INSERT INTO services (id, name, price, duration, icon, popular, active, category, price_range) VALUES (?,?,?,?,?,0,1,?,?)',
     id,
     String(name).trim(),
     Number(price || 0),
     String(duration || '60 นาที'),
     String(icon || '💅'),
     String(category || ''),
-    String(price_range || '')
+    String(price_range || ''),
   );
-  res.json(db.prepare('SELECT * FROM services WHERE id=?').get(id));
+  res.json(await db.get('SELECT * FROM services WHERE id=?', id));
 });
 
-app.delete('/api/admin/services/:id', requireAdmin, (req, res) => {
+app.delete('/api/admin/services/:id', requireAdmin, async (req, res) => {
   const { id } = req.params;
-  const svc = db.prepare('SELECT id FROM services WHERE id=?').get(id);
+  const svc = await db.get('SELECT id FROM services WHERE id=?', id);
   if (!svc) return res.status(404).json({ error: 'ไม่พบบริการ' });
-  const used = db.prepare('SELECT COUNT(*) AS n FROM bookings WHERE service_id=?').get(id).n;
-  if (used > 0) {
+  const used = await db.get('SELECT COUNT(*) AS n FROM bookings WHERE service_id=?', id);
+  if (used.n > 0) {
     return res.status(400).json({ error: 'บริการนี้มีคิวอ้างอิงอยู่ กรุณาใช้ "ซ่อน" แทนการลบ' });
   }
-  db.prepare('DELETE FROM services WHERE id=?').run(id);
+  await db.run('DELETE FROM services WHERE id=?', id);
   res.json({ message: 'ok' });
 });
 
 // ── admin: business settings ───────────────────────────────────────────────
-app.get('/api/admin/settings', requireAdmin, (_req, res) => {
-  res.json(getSettings());
+app.get('/api/admin/settings', requireAdmin, async (_req, res) => {
+  res.json(await getSettings());
 });
 
-app.put('/api/admin/settings', requireAdmin, (req, res) => {
+app.put('/api/admin/settings', requireAdmin, async (req, res) => {
   const { openTime, closeTime, slotMinutes, closedDays } = req.body;
   if (
     !/^\d{2}:\d{2}$/.test(openTime || '') ||
@@ -362,18 +387,24 @@ app.put('/api/admin/settings', requireAdmin, (req, res) => {
   if (!Array.isArray(closedDays) || closedDays.some((d) => !Number.isInteger(d) || d < 0 || d > 6)) {
     return res.status(400).json({ error: 'วันหยุดไม่ถูกต้อง' });
   }
-  saveSettings({ openTime, closeTime, slotMinutes: step, closedDays });
-  res.json(getSettings());
+  await saveSettings({ openTime, closeTime, slotMinutes: step, closedDays });
+  res.json(await getSettings());
 });
 
 // ── admin: stats ───────────────────────────────────────────────────────────
-app.get('/api/admin/stats', requireAdmin, (req, res) => {
+app.get('/api/admin/stats', requireAdmin, async (req, res) => {
   const today = todayStr();
-  const todayCount = db.prepare("SELECT COUNT(*) AS n FROM bookings WHERE date=? AND status IN ('pending','confirmed')").get(today).n;
-  const totalPending = db.prepare("SELECT COUNT(*) AS n FROM bookings WHERE status='pending'").get().n;
-  const totalConfirmed = db.prepare("SELECT COUNT(*) AS n FROM bookings WHERE status='confirmed'").get().n;
-  const totalCompleted = db.prepare("SELECT COUNT(*) AS n FROM bookings WHERE status='completed'").get().n;
-  const revenue = db.prepare("SELECT COALESCE(SUM(s.price),0) AS total FROM bookings b JOIN services s ON b.service_id=s.id WHERE b.date=? AND b.status IN ('pending','confirmed','completed')").get(today).total;
+  const todayCount = (await db.get(
+    "SELECT COUNT(*) AS n FROM bookings WHERE date=? AND status IN ('pending','confirmed')",
+    today,
+  )).n;
+  const totalPending = (await db.get("SELECT COUNT(*) AS n FROM bookings WHERE status='pending'")).n;
+  const totalConfirmed = (await db.get("SELECT COUNT(*) AS n FROM bookings WHERE status='confirmed'")).n;
+  const totalCompleted = (await db.get("SELECT COUNT(*) AS n FROM bookings WHERE status='completed'")).n;
+  const revenue = (await db.get(
+    'SELECT COALESCE(SUM(s.price),0) AS total FROM bookings b JOIN services s ON b.service_id=s.id WHERE b.date=? AND b.status IN (\'pending\',\'confirmed\',\'completed\')',
+    today,
+  )).total;
   res.json({ todayCount, totalPending, totalConfirmed, totalCompleted, revenue });
 });
 
@@ -383,6 +414,14 @@ app.use(express.static(dist));
 const indexPath = path.join(dist, 'index.html');
 app.get(/^\/(?!api\/).*/u, (_req, res) => res.sendFile(indexPath));
 
-app.listen(PORT, () => {
-  console.log(`💅 Nail Salon API → http://localhost:${PORT}`);
-});
+// ── start ──────────────────────────────────────────────────────────────────
+try {
+  await initDb();
+  console.log(`[db] connected (${USE_PG ? 'postgres cloud' : 'local sqlite'})`);
+  app.listen(PORT, () => {
+    console.log(`💅 Nail Salon API → http://localhost:${PORT}`);
+  });
+} catch (err) {
+  console.error('[db] init failed:', err);
+  process.exit(1);
+}

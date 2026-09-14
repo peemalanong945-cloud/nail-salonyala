@@ -1,71 +1,183 @@
+import 'dotenv/config';
 import Database from 'better-sqlite3';
+import pg from 'pg';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 import fs from 'node:fs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const dataDir = path.join(__dirname, '..', 'data');
-fs.mkdirSync(dataDir, { recursive: true });
 
-const db = new Database(path.join(dataDir, 'nailsalon.db'));
-db.pragma('journal_mode = WAL');
-db.pragma('foreign_keys = ON');
+const USE_PG = Boolean(process.env.DATABASE_URL);
 
-db.exec(`
-  CREATE TABLE IF NOT EXISTS services (
-    id TEXT PRIMARY KEY,
-    name TEXT NOT NULL,
-    name_en TEXT,
-    description TEXT,
-    price INTEGER NOT NULL DEFAULT 0,
-    duration TEXT,
-    icon TEXT,
-    popular INTEGER NOT NULL DEFAULT 0,
-    active INTEGER NOT NULL DEFAULT 1
-  );
+let sqlite = null;
+let pool = null;
 
-  CREATE TABLE IF NOT EXISTS bookings (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    ref TEXT UNIQUE NOT NULL,
-    service_id TEXT NOT NULL,
-    date TEXT NOT NULL,
-    time TEXT NOT NULL,
-    name TEXT NOT NULL,
-    phone TEXT NOT NULL,
-    note TEXT DEFAULT '',
-    status TEXT NOT NULL DEFAULT 'pending',
-    created_at TEXT NOT NULL DEFAULT (datetime('now', 'localtime')),
-    FOREIGN KEY (service_id) REFERENCES services(id)
-  );
-
-  CREATE TABLE IF NOT EXISTS settings (
-    key TEXT PRIMARY KEY,
-    value TEXT NOT NULL
-  );
-`);
-
-// ── migrations: เพิ่ม column สำหรับหมวดหมู่และราคาแบบช่วง ───────────────────
-const serviceCols = db.prepare('PRAGMA table_info(services)').all().map((c) => c.name);
-if (!serviceCols.includes('category')) {
-  db.exec('ALTER TABLE services ADD COLUMN category TEXT DEFAULT \'\'');
-}
-if (!serviceCols.includes('price_range')) {
-  db.exec('ALTER TABLE services ADD COLUMN price_range TEXT DEFAULT \'\'');
+if (USE_PG) {
+  pool = new pg.Pool({
+    connectionString: process.env.DATABASE_URL,
+    ssl: { rejectUnauthorized: false },
+    max: 5,
+  });
+} else {
+  const dataDir = path.join(__dirname, '..', 'data');
+  fs.mkdirSync(dataDir, { recursive: true });
+  sqlite = new Database(path.join(dataDir, 'nailsalon.db'));
+  sqlite.pragma('journal_mode = WAL');
+  sqlite.pragma('foreign_keys = ON');
 }
 
-const defaults = {
-  open_time: '09:00',
-  close_time: '20:00',
-  slot_minutes: '60',
-  closed_days: '0', // 0=อาทิตย์ ... 6=เสาร์ (คั่นด้วย ,)
+// แปลง ? เป็น $1,$2,... สำหรับ Postgres
+function pgSql(sql) {
+  let n = 0;
+  return sql.replace(/\?/g, () => `$${++n}`);
+}
+
+// ── async wrapper: ใช้ API เดียวกันทั้ง sqlite/PG ────────────────────────────
+const db = {
+  async all(sql, ...params) {
+    if (USE_PG) {
+      const res = await pool.query(pgSql(sql), params);
+      return res.rows;
+    }
+    return sqlite.prepare(sql).all(...params);
+  },
+  async get(sql, ...params) {
+    if (USE_PG) {
+      const res = await pool.query(pgSql(sql), params);
+      return res.rows[0];
+    }
+    return sqlite.prepare(sql).get(...params);
+  },
+  async run(sql, ...params) {
+    if (USE_PG) {
+      await pool.query(pgSql(sql), params);
+      return {};
+    }
+    return sqlite.prepare(sql).run(...params);
+  },
+  async exec(sql) {
+    if (USE_PG) {
+      await pool.query(sql);
+      return;
+    }
+    sqlite.exec(sql);
+  },
 };
-const getSetting = db.prepare('SELECT value FROM settings WHERE key=?');
-const setSetting = db.prepare(
-  'INSERT INTO settings (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value=excluded.value',
-);
-for (const [key, value] of Object.entries(defaults)) if (!getSetting.get(key)) setSetting.run(key, value);
 
-// ── price list ──────────────────────────────────────────────────────────
+// ── schema + seed ───────────────────────────────────────────────────────────
+export async function initDb() {
+  if (USE_PG) {
+    await db.exec(`
+      CREATE TABLE IF NOT EXISTS services (
+        id TEXT PRIMARY KEY,
+        name TEXT NOT NULL,
+        name_en TEXT,
+        description TEXT,
+        price INTEGER NOT NULL DEFAULT 0,
+        duration TEXT,
+        icon TEXT,
+        popular INTEGER NOT NULL DEFAULT 0,
+        active INTEGER NOT NULL DEFAULT 1,
+        category TEXT DEFAULT '',
+        price_range TEXT DEFAULT ''
+      );
+      CREATE TABLE IF NOT EXISTS bookings (
+        id SERIAL PRIMARY KEY,
+        ref TEXT UNIQUE NOT NULL,
+        service_id TEXT NOT NULL,
+        date TEXT NOT NULL,
+        time TEXT NOT NULL,
+        name TEXT NOT NULL,
+        phone TEXT NOT NULL,
+        note TEXT DEFAULT '',
+        status TEXT NOT NULL DEFAULT 'pending',
+        created_at TIMESTAMP DEFAULT now(),
+        FOREIGN KEY (service_id) REFERENCES services(id)
+      );
+      CREATE TABLE IF NOT EXISTS settings (
+        key TEXT PRIMARY KEY,
+        value TEXT NOT NULL
+      );
+    `);
+  } else {
+    await db.exec(`
+      CREATE TABLE IF NOT EXISTS services (
+        id TEXT PRIMARY KEY,
+        name TEXT NOT NULL,
+        name_en TEXT,
+        description TEXT,
+        price INTEGER NOT NULL DEFAULT 0,
+        duration TEXT,
+        icon TEXT,
+        popular INTEGER NOT NULL DEFAULT 0,
+        active INTEGER NOT NULL DEFAULT 1
+      );
+      CREATE TABLE IF NOT EXISTS bookings (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        ref TEXT UNIQUE NOT NULL,
+        service_id TEXT NOT NULL,
+        date TEXT NOT NULL,
+        time TEXT NOT NULL,
+        name TEXT NOT NULL,
+        phone TEXT NOT NULL,
+        note TEXT DEFAULT '',
+        status TEXT NOT NULL DEFAULT 'pending',
+        created_at TEXT NOT NULL DEFAULT (datetime('now', 'localtime')),
+        FOREIGN KEY (service_id) REFERENCES services(id)
+      );
+      CREATE TABLE IF NOT EXISTS settings (
+        key TEXT PRIMARY KEY,
+        value TEXT NOT NULL
+      );
+    `);
+
+    // ── migrations: column สำหรับหมวดหมู่และราคาแบบช่วง ──
+    const cols = sqlite.prepare('PRAGMA table_info(services)').all().map((c) => c.name);
+    if (!cols.includes('category')) await db.exec('ALTER TABLE services ADD COLUMN category TEXT DEFAULT \'\'');
+    if (!cols.includes('price_range')) await db.exec('ALTER TABLE services ADD COLUMN price_range TEXT DEFAULT \'\'');
+  }
+
+  // ── settings เริ่มต้น ──
+  const defaults = {
+    open_time: '09:00',
+    close_time: '20:00',
+    slot_minutes: '60',
+    closed_days: '0', // 0=อาทิตย์ ... 6=เสาร์
+  };
+  for (const [key, value] of Object.entries(defaults)) {
+    const existing = await db.get('SELECT value FROM settings WHERE key=?', key);
+    if (!existing) {
+      await db.run(
+        'INSERT INTO settings (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value=excluded.value',
+        key,
+        value,
+      );
+    }
+  }
+
+  // ── seed บริการถ้ายังว่าง ──
+  const count = await db.get('SELECT COUNT(*) AS n FROM services');
+  if (!count || Number(count.n) === 0) {
+    for (const s of seedServices) {
+      await db.run(
+        'INSERT INTO services (id, name, name_en, description, price, duration, icon, popular, active, category, price_range) VALUES (?,?,?,?,?,?,?,?,?,?,?)',
+        s.id,
+        s.name,
+        s.name_en || '',
+        s.description,
+        s.price,
+        s.duration,
+        s.icon,
+        s.popular || 0,
+        1,
+        s.category,
+        s.price_range || '',
+      );
+    }
+    console.log(`[db] seeded ${seedServices.length} services (${USE_PG ? 'postgres' : 'sqlite'})`);
+  }
+}
+
 const seedServices = [
   // สีเจล / ทำเล็บมือ
   { id: 'gel-basic', category: 'สีเจล', name: 'เล็บเจลเริ่มต้น', price: 189, price_range: '', duration: '60 นาที', icon: '💅', description: 'ทำสีเจลเริ่มต้น ปกปิดสีเล็บสวยเงางาม' },
@@ -126,15 +238,6 @@ const seedServices = [
   { id: 'rmv-notol', category: 'ล้าง/ถอด', name: 'ถอดเล็บเจล / PVC (ไม่ทำต่อ)', price: 150, price_range: '150 - 200', duration: '30 นาที', icon: '🗑️', description: 'ถอดเล็บอย่างปลอดภัย ไม่ทำต่อ' },
 ];
 
-const seedCount = db.prepare('SELECT COUNT(*) AS n FROM services').get().n;
-if (seedCount === 0) {
-  const insert = db.prepare(
-    'INSERT INTO services (id, name, name_en, description, price, duration, icon, popular, active, category, price_range) VALUES (?,?,?,?,?,?,?,?,?,?,?)',
-  );
-  for (const s of seedServices) {
-    insert.run(s.id, s.name, s.name_en || '', s.description, s.price, s.duration, s.icon, s.popular || 0, 1, s.category, s.price_range || '');
-  }
-  console.log(`[db] seeded ${seedServices.length} services`);
-}
+export { USE_PG };
 
 export default db;
