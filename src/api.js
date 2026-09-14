@@ -2,8 +2,8 @@ async function json(url, options) {
   let res;
   try {
     res = await fetch(url, {
-      headers: { 'Content-Type': 'application/json' },
       ...options,
+      headers: { 'Content-Type': 'application/json', ...options?.headers },
     });
   } catch (err) {
     const e = new Error('การเชื่อมต่อขัดข้อง หรือเซิร์ฟเวอร์กำลังตื่น กรุณาลองอีกครั้ง');
