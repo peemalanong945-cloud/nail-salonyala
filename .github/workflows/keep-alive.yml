@@ -10,12 +10,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Wake Render + keep Supabase active
-        env:
-          WEB_URL: ${{ secrets.WEB_URL }}
         run: |
-          if [ -n "$WEB_URL" ]; then
-            curl -fsS -o /dev/null --max-time 120 "$WEB_URL/api/services" || true
-            curl -fsS -o /dev/null --max-time 30 "https://api.supabase.com" || true
-          else
-            echo "no WEB_URL secret set, skipping"
-          fi
+          curl -fsS -o /dev/null --max-time 120 "https://nail-salonyala.onrender.com/api/services" || true
+          curl -fsS -o /dev/null --max-time 30 "https://api.supabase.com" || true
