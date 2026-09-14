@@ -1,6 +1,6 @@
 import { Fragment, useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
-import { apiAdmin } from "../api";
+import { apiAdmin, jsonWithRetry } from "../api";
 
 const TOKEN_KEY = "nail_admin_token";
 
@@ -735,6 +735,7 @@ function SettingsForm({ token, settings, setSettings }) {
   const slotRef = useRef(settings.slotMinutes);
   const [closedDays, setClosedDays] = useState(settings.closedDays || []);
   const [msg, setMsg] = useState("");
+  const [msgErr, setMsgErr] = useState(false);
   const [busy, setBusy] = useState(false);
 
   const toggleDay = (d) =>
@@ -742,18 +743,30 @@ function SettingsForm({ token, settings, setSettings }) {
 
   const save = async () => {
     setMsg("");
+    setMsgErr(false);
     setBusy(true);
     try {
-      const updated = await apiAdmin.updateSettings(token, {
-        openTime: openRef.current.value,
-        closeTime: closeRef.current.value,
-        slotMinutes: Number(slotRef.current.value),
-        closedDays,
-      });
+      const pad = (t) => (/\d{2}:\d{2}/.test(t) ? t : t.split(":").map((p) => p.padStart(2, "0")).join(":"));
+      const updated = await jsonWithRetry(
+        "/api/admin/settings",
+        {
+          method: "PUT",
+          headers: { Authorization: `Bearer ${token}` },
+          body: JSON.stringify({
+            openTime: pad(openRef.current.value),
+            closeTime: pad(closeRef.current.value),
+            slotMinutes: Number(slotRef.current.value),
+            closedDays,
+          }),
+        },
+        2,
+        4000,
+      );
       setSettings(updated);
       setMsg("บันทึกแล้ว ✓ ระบบคิวใช้เวลาใหม่ทันที");
     } catch (err) {
-      setMsg(err.message);
+      setMsgErr(true);
+      setMsg(err.network ? "ยังเชื่อมต่อไม่ได้ — เซิร์ฟเวอร์กำลังตื่นอยู่ รอ 1 นาทีแล้วลองอีกครั้ง" : err.message);
     } finally {
       setBusy(false);
     }
@@ -812,9 +825,11 @@ function SettingsForm({ token, settings, setSettings }) {
           disabled={busy}
           className="rounded-full bg-plum-800 px-6 py-2.5 text-sm font-semibold text-white shadow-md transition hover:bg-plum-900 disabled:opacity-50"
         >
-          {busy ? "กำลังบันทึก..." : "บันทึกเวลาเปิด-ปิด"}
+          {busy ? "กำลังบันทึก... (อาจรอ ~10 วินาทีถ้าเซิร์ฟเวอร์กำลังตื่น)" : "บันทึกเวลาเปิด-ปิด"}
         </button>
-        {msg && <span className="text-sm font-medium text-emerald-700">{msg}</span>}
+        {msg && (
+          <span className={`text-sm font-medium ${msgErr ? "text-red-600" : "text-emerald-700"}`}>{msg}</span>
+        )}
       </div>
     </div>
   );

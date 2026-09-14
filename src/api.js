@@ -1,15 +1,42 @@
 async function json(url, options) {
-  const res = await fetch(url, {
-    headers: { 'Content-Type': 'application/json' },
-    ...options,
-  });
+  let res;
+  try {
+    res = await fetch(url, {
+      headers: { 'Content-Type': 'application/json' },
+      ...options,
+    });
+  } catch (err) {
+    const e = new Error('การเชื่อมต่อขัดข้อง หรือเซิร์ฟเวอร์กำลังตื่น กรุณาลองอีกครั้ง');
+    e.network = true;
+    e.cause = err;
+    throw e;
+  }
   const data = await res.json().catch(() => ({}));
   if (res.status === 401) {
     localStorage.removeItem('nail_admin_token');
     window.dispatchEvent(new Event('admin-unauthorized'));
   }
-  if (!res.ok) throw new Error(data.error || 'เกิดข้อผิดพลาด');
+  if (!res.ok) {
+    const e = new Error(data.error || data.message || `เกิดข้อผิดพลาด (HTTP ${res.status})`);
+    e.status = res.status;
+    throw e;
+  }
   return data;
+}
+
+export async function jsonWithRetry(url, options = {}, retries = 2, delayMs = 4000) {
+  let lastErr;
+  for (let i = 0; i <= retries; i++) {
+    try {
+      return await json(url, options);
+    } catch (err) {
+      lastErr = err;
+      const retriable = i < retries && (err.network || (typeof err.status === 'number' && err.status >= 500));
+      if (!retriable) throw err;
+      await new Promise((r) => setTimeout(r, delayMs));
+    }
+  }
+  throw lastErr;
 }
 
 export const api = {
