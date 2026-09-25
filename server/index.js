@@ -105,6 +105,7 @@ async function sendEmail(subject, text) {
       connectionTimeout: 15000,
       greetingTimeout: 15000,
       socketTimeout: 25000,
+      family: 4,
     },
   ];
   if (SMTP_PORT === 587) {
@@ -117,6 +118,7 @@ async function sendEmail(subject, text) {
       connectionTimeout: 15000,
       greetingTimeout: 15000,
       socketTimeout: 25000,
+      family: 4,
     });
   }
   for (const opts of attempts) {
