@@ -408,12 +408,12 @@ app.post('/api/admin/test-email', requireAdmin, async (req, res) => {
 });
 
 app.get('/api/admin/smtp-diag', requireAdmin, async (_req, res) => {
-  const { hostname } = await import('node:dns/promises');
+  const { lookup } = await import('node:dns/promises');
   const net = await import('node:net');
   const out = { host: SMTP_HOST, ports: {} };
   try {
-    const resolved = await hostname(SMTP_HOST);
-    out.dns = resolved;
+    const { address, family } = await lookup(SMTP_HOST, { family: 4 });
+    out.dns = `${address} (IPv${family})`;
   } catch (e) {
     out.dnsError = e.message;
     return res.json(out);
