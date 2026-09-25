@@ -410,26 +410,36 @@ app.post('/api/admin/test-email', requireAdmin, async (req, res) => {
 app.get('/api/admin/smtp-diag', requireAdmin, async (_req, res) => {
   const { lookup } = await import('node:dns/promises');
   const net = await import('node:net');
-  const out = { host: SMTP_HOST, ports: {} };
-  try {
-    const { address, family } = await lookup(SMTP_HOST, { family: 4 });
-    out.dns = `${address} (IPv${family})`;
-  } catch (e) {
-    out.dnsError = e.message;
-    return res.json(out);
-  }
-  for (const port of [465, 587, 25]) {
+  const out = { hosts: {} };
+  const targets = [
+    ['smtp.gmail.com', [465, 587]],
+    ['smtp.office365.com', [587]],
+    ['smtp-relay.brevo.com', [587]],
+    ['www.google.com', [443]],
+  ];
+  for (const [host, ports] of targets) {
+    let dns = null;
     try {
-      const ok = await new Promise((resolve) => {
-        const sock = net.connect({ host: SMTP_HOST, port, family: 4 });
-        const t = setTimeout(() => { sock.destroy(); resolve(false); }, 10000);
-        sock.once('connect', () => { clearTimeout(t); sock.destroy(); resolve(true); });
-        sock.once('error', () => { clearTimeout(t); resolve(false); });
-      });
-      out.ports[String(port)] = ok;
+      const { address, family } = await lookup(host, { family: 4 });
+      dns = `${address} (IPv${family})`;
     } catch (e) {
-      out.ports[String(port)] = `ERR ${e.message}`;
+      dns = `ERR ${e.code}`;
     }
+    const portRes = {};
+    for (const port of ports) {
+      try {
+        const ok = await new Promise((resolve) => {
+          const sock = net.connect({ host, port, family: 4 });
+          const t = setTimeout(() => { sock.destroy(); resolve(false); }, 10000);
+          sock.once('connect', () => { clearTimeout(t); sock.destroy(); resolve(true); });
+          sock.once('error', () => { clearTimeout(t); resolve(false); });
+        });
+        portRes[String(port)] = ok;
+      } catch (e) {
+        portRes[String(port)] = `ERR ${e.message}`;
+      }
+    }
+    out.hosts[host] = { dns, ports: portRes };
   }
   res.json(out);
 });
