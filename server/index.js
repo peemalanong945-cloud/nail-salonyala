@@ -413,8 +413,8 @@ app.get('/api/admin/smtp-diag', requireAdmin, async (_req, res) => {
   const out = { hosts: {} };
   const targets = [
     ['smtp.gmail.com', [465, 587]],
-    ['smtp.office365.com', [587]],
-    ['smtp-relay.brevo.com', [587]],
+    ['smtp-relay.brevo.com', [587, 2525]],
+    ['api.brevo.com', [443]],
     ['www.google.com', [443]],
   ];
   for (const [host, ports] of targets) {
