@@ -95,6 +95,7 @@ async function trySendMail(transporter, subject, text) {
 }
 async function sendEmail(subject, text) {
   if (!emailConfigured()) return { sent: false, reason: 'no-config' };
+  let lastError = 'unknown';
   const attempts = [
     {
       host: SMTP_HOST,
@@ -128,9 +129,10 @@ async function sendEmail(subject, text) {
       return { sent: true, messageId: info.messageId, port: opts.port };
     } catch (err) {
       console.error(`[EMAIL] attempt via port ${opts.port} failed:`, err?.message ?? err);
+      lastError = err?.message ?? String(err);
     }
   }
-  return { sent: false, reason: 'error', error: 'ส่งอีเมลไม่สำเร็จ (SMTP ไม่ตอบกลับ)' };
+  return { sent: false, reason: 'error', error: `ส่งอีเมลไม่สำเร็จ: ${lastError}` };
 }
 async function notifyAdmins({ subject, text }) {
   const [line, email] = await Promise.all([
