@@ -96,31 +96,21 @@ async function trySendMail(transporter, subject, text) {
 async function sendEmail(subject, text) {
   if (!emailConfigured()) return { sent: false, reason: 'no-config' };
   let lastError = 'unknown';
-  const attempts = [
-    {
-      host: SMTP_HOST,
-      port: 465,
-      secure: true,
-      auth: SMTP_USER && SMTP_PASS ? { user: SMTP_USER, pass: SMTP_PASS } : undefined,
-      tls: { rejectUnauthorized: false },
-      connectionTimeout: 15000,
-      greetingTimeout: 15000,
-      socketTimeout: 25000,
-      family: 4,
-    },
-  ];
-  if (SMTP_PORT === 587) {
-    attempts.push({
-      host: SMTP_HOST,
-      port: 587,
-      secure: false,
-      auth: SMTP_USER && SMTP_PASS ? { user: SMTP_USER, pass: SMTP_PASS } : undefined,
-      tls: { rejectUnauthorized: false },
-      connectionTimeout: 15000,
-      greetingTimeout: 15000,
-      socketTimeout: 25000,
-      family: 4,
-    });
+  const attempts = [];
+  const mk = (port, secure) => ({
+    host: SMTP_HOST,
+    port,
+    secure,
+    auth: SMTP_USER && SMTP_PASS ? { user: SMTP_USER, pass: SMTP_PASS } : undefined,
+    tls: { rejectUnauthorized: false },
+    connectionTimeout: 20000,
+    greetingTimeout: 20000,
+    socketTimeout: 30000,
+    family: 4,
+  });
+  attempts.push(mk(SMTP_PORT, SMTP_PORT === 465));
+  for (const [port, secure] of [[465, true], [587, false], [2525, false]]) {
+    if (!attempts.some((a) => a.port === port)) attempts.push(mk(port, secure));
   }
   for (const opts of attempts) {
     try {
