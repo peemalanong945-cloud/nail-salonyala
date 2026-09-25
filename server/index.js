@@ -85,27 +85,50 @@ async function sendLineNotify(message) {
 function emailConfigured() {
   return !!(SMTP_HOST && EMAIL_FROM && EMAIL_TO.length);
 }
+async function trySendMail(transporter, subject, text) {
+  return transporter.sendMail({
+    from: EMAIL_FROM,
+    to: EMAIL_TO.join(', '),
+    subject,
+    text,
+  });
+}
 async function sendEmail(subject, text) {
   if (!emailConfigured()) return { sent: false, reason: 'no-config' };
-  try {
-    const transporter = nodemailer.createTransport({
+  const attempts = [
+    {
       host: SMTP_HOST,
-      port: SMTP_PORT,
-      secure: SMTP_PORT === 465,
+      port: 465,
+      secure: true,
       auth: SMTP_USER && SMTP_PASS ? { user: SMTP_USER, pass: SMTP_PASS } : undefined,
       tls: { rejectUnauthorized: false },
+      connectionTimeout: 15000,
+      greetingTimeout: 15000,
+      socketTimeout: 25000,
+    },
+  ];
+  if (SMTP_PORT === 587) {
+    attempts.push({
+      host: SMTP_HOST,
+      port: 587,
+      secure: false,
+      auth: SMTP_USER && SMTP_PASS ? { user: SMTP_USER, pass: SMTP_PASS } : undefined,
+      tls: { rejectUnauthorized: false },
+      connectionTimeout: 15000,
+      greetingTimeout: 15000,
+      socketTimeout: 25000,
     });
-    const info = await transporter.sendMail({
-      from: EMAIL_FROM,
-      to: EMAIL_TO.join(', '),
-      subject,
-      text,
-    });
-    return { sent: true, messageId: info.messageId };
-  } catch (err) {
-    console.error('[EMAIL] send failed:', err?.message ?? err);
-    return { sent: false, reason: 'error', error: String(err?.message ?? err) };
   }
+  for (const opts of attempts) {
+    try {
+      const transporter = nodemailer.createTransport(opts);
+      const info = await trySendMail(transporter, subject, text);
+      return { sent: true, messageId: info.messageId, port: opts.port };
+    } catch (err) {
+      console.error(`[EMAIL] attempt via port ${opts.port} failed:`, err?.message ?? err);
+    }
+  }
+  return { sent: false, reason: 'error', error: 'ส่งอีเมลไม่สำเร็จ (SMTP ไม่ตอบกลับ)' };
 }
 async function notifyAdmins({ subject, text }) {
   const [line, email] = await Promise.all([
