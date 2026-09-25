@@ -407,6 +407,33 @@ app.post('/api/admin/test-email', requireAdmin, async (req, res) => {
   res.json(result);
 });
 
+app.get('/api/admin/smtp-diag', requireAdmin, async (_req, res) => {
+  const { hostname } = await import('node:dns/promises');
+  const net = await import('node:net');
+  const out = { host: SMTP_HOST, ports: {} };
+  try {
+    const resolved = await hostname(SMTP_HOST);
+    out.dns = resolved;
+  } catch (e) {
+    out.dnsError = e.message;
+    return res.json(out);
+  }
+  for (const port of [465, 587, 25]) {
+    try {
+      const ok = await new Promise((resolve) => {
+        const sock = net.connect({ host: SMTP_HOST, port, family: 4 });
+        const t = setTimeout(() => { sock.destroy(); resolve(false); }, 10000);
+        sock.once('connect', () => { clearTimeout(t); sock.destroy(); resolve(true); });
+        sock.once('error', () => { clearTimeout(t); resolve(false); });
+      });
+      out.ports[String(port)] = ok;
+    } catch (e) {
+      out.ports[String(port)] = `ERR ${e.message}`;
+    }
+  }
+  res.json(out);
+});
+
 // ── admin: services CRUD ───────────────────────────────────────────────────
 app.put('/api/admin/services/:id', requireAdmin, async (req, res) => {
   const { id } = req.params;
