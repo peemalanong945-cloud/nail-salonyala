@@ -101,6 +101,10 @@ function Dashboard({ token, onLogout }) {
   const [lineConfigured, setLineConfigured] = useState(null);
   const [lineMsg, setLineMsg] = useState("");
   const [lineBusy, setLineBusy] = useState(false);
+  const [emailConfigured, setEmailConfigured] = useState(null);
+  const [emailTo, setEmailTo] = useState([]);
+  const [emailMsg, setEmailMsg] = useState("");
+  const [emailBusy, setEmailBusy] = useState(false);
   const [settings, setSettings] = useState(null);
   const [weekBookings, setWeekBookings] = useState([]);
   const [weekOffset, setWeekOffset] = useState(0);
@@ -159,6 +163,13 @@ function Dashboard({ token, onLogout }) {
       .lineStatus(token)
       .then((s) => setLineConfigured(s.configured))
       .catch(() => setLineConfigured(false));
+    apiAdmin
+      .emailStatus(token)
+      .then((s) => {
+        setEmailConfigured(s.configured);
+        setEmailTo(s.to || []);
+      })
+      .catch(() => setEmailConfigured(false));
     apiAdmin.settings(token).then(setSettings).catch(() => {});
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -191,6 +202,23 @@ function Dashboard({ token, onLogout }) {
       setLineMsg(err.message);
     } finally {
       setLineBusy(false);
+    }
+  };
+
+  const testEmail = async () => {
+    setEmailMsg("");
+    setEmailBusy(true);
+    try {
+      const result = await apiAdmin.testEmail(token);
+      setEmailMsg(
+        result.sent
+          ? "✅ ส่งสำเร็จ ตรวจดูกล่องจดหมายของคุณได้เลย"
+          : result.error || "ส่งไม่สำเร็จ ตรวจสอบ SMTP ใน .env",
+      );
+    } catch (err) {
+      setEmailMsg(err.message);
+    } finally {
+      setEmailBusy(false);
     }
   };
 
@@ -337,6 +365,60 @@ function Dashboard({ token, onLogout }) {
                   รีสตาร์ท server (กด Ctrl+C แล้วรัน{" "}
                   <code className="rounded bg-white px-1.5 py-0.5 font-mono text-xs">npm run both</code> ใหม่) แล้วกลับมากด
                   "ส่งข้อความเทสต์"
+                </li>
+              </ol>
+            </div>
+          )}
+        </div>
+
+        <div className="mt-8 rounded-3xl bg-white p-6 shadow-sm ring-1 ring-emerald-100">
+          <div className="flex flex-wrap items-center gap-4">
+            <span className="grid h-12 w-12 place-items-center rounded-2xl bg-gradient-to-br from-sky-400 to-sky-600 text-2xl shadow-md">
+              📧
+            </span>
+            <div className="flex-1">
+              <h2 className="font-display text-lg font-bold text-plum-900">
+                อีเมลแจ้งเตือนเจ้าของร้าน
+              </h2>
+              <p className="mt-0.5 text-sm text-plum-600">
+                {emailConfigured === null
+                  ? "กำลังตรวจสอบการตั้งค่า..."
+                  : emailConfigured
+                    ? `✦ ตั้งค่าแล้ว (ส่งไปยัง ${emailTo.join(", ")}) — จะแจ้งเตือนเมื่อมีคิวใหม่ / ยกเลิก / เปลี่ยนสถานะ`
+                    : "ยังไม่ได้ตั้งค่า — ยังไม่มีการแจ้งเตือนทางอีเมล"}
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={testEmail}
+              disabled={emailBusy}
+              className="rounded-full bg-sky-500 px-5 py-2.5 text-sm font-semibold text-white shadow-md transition hover:bg-sky-600 disabled:opacity-50"
+            >
+              {emailBusy ? "กำลังส่ง..." : "ส่งอีเมลเทสต์"}
+            </button>
+          </div>
+          {emailMsg && (
+            <p className="mt-4 rounded-2xl bg-sky-50 px-4 py-3 text-sm text-sky-800 ring-1 ring-sky-100">
+              {emailMsg}
+            </p>
+          )}
+          {!emailConfigured && (
+            <div className="mt-4 rounded-2xl bg-plum-50 px-5 py-4 text-sm leading-relaxed text-plum-700 ring-1 ring-plum-100">
+              <p className="font-semibold text-plum-900">วิธีเปิดใช้งาน (ใช้ Gmail ฟรี):</p>
+              <ol className="mt-1.5 list-decimal space-y-1 pl-5">
+                <li>
+                  ตั้งค่า Gmail → ความปลอดภัย → เปิด{" "}
+                  <span className="font-semibold text-sky-600">2FA (การยืนยันสองขั้นตอน)</span> → สร้าง{" "}
+                  <span className="font-semibold text-sky-600">App Password</span>
+                </li>
+                <li>
+                  วางค่าในไฟล์ <code className="rounded bg-white px-1.5 py-0.5 font-mono text-xs">.env</code>:
+                  <code className="mt-1 block whitespace-pre-wrap rounded bg-white px-2 py-1.5 font-mono text-[11px]">
+                    {`SMTP_HOST=smtp.gmail.com\nSMTP_PORT=587\nSMTP_USER=<อีเมลคุณ@gmail.com>\nSMTP_PASS=<App Password>\nEMAIL_FROM=<อีเมลคุณ@gmail.com>\nEMAIL_TO=<อีเมลที่จะรับแจ้งเตือน>`}
+                  </code>
+                </li>
+                <li>
+                  รีสตาร์ท server แล้วกลับมากด "ส่งอีเมลเทสต์"
                 </li>
               </ol>
             </div>

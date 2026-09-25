@@ -73,6 +73,10 @@ export const apiAdmin = {
     json('/api/admin/line-status', { headers: { Authorization: `Bearer ${token}` } }),
   testLine: (token) =>
     json('/api/admin/test-line', { method: 'POST', headers: { Authorization: `Bearer ${token}` } }),
+  emailStatus: (token) =>
+    json('/api/admin/email-status', { headers: { Authorization: `Bearer ${token}` } }),
+  testEmail: (token) =>
+    json('/api/admin/test-email', { method: 'POST', headers: { Authorization: `Bearer ${token}` } }),
   settings: (token) =>
     json('/api/admin/settings', { headers: { Authorization: `Bearer ${token}` } }),
   updateSettings: (token, body) =>

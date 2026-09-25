@@ -4,6 +4,7 @@ import cors from 'cors';
 import crypto from 'node:crypto';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import nodemailer from 'nodemailer';
 import db, { initDb, USE_PG } from './db.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -11,6 +12,14 @@ const app = express();
 const PORT = process.env.PORT ?? 4000;
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'admin123';
 const LINE_NOTIFY_TOKEN = process.env.LINE_NOTIFY_TOKEN || '';
+
+// ── Email config ────────────────────────────────────────────────────────────
+const SMTP_HOST = process.env.SMTP_HOST || '';
+const SMTP_PORT = Number(process.env.SMTP_PORT) || 587;
+const SMTP_USER = process.env.SMTP_USER || '';
+const SMTP_PASS = process.env.SMTP_PASS || '';
+const EMAIL_FROM = process.env.EMAIL_FROM || SMTP_USER;
+const EMAIL_TO = (process.env.EMAIL_TO || '').split(',').map((e) => e.trim()).filter(Boolean);
 
 app.use(cors());
 app.use(express.json());
@@ -70,6 +79,40 @@ async function sendLineNotify(message) {
     console.error('[LINE] notify failed:', err?.message ?? err);
     return { sent: false, reason: 'network-error' };
   }
+}
+
+// ── Email notify ───────────────────────────────────────────────────────────
+function emailConfigured() {
+  return !!(SMTP_HOST && EMAIL_FROM && EMAIL_TO.length);
+}
+async function sendEmail(subject, text) {
+  if (!emailConfigured()) return { sent: false, reason: 'no-config' };
+  try {
+    const transporter = nodemailer.createTransport({
+      host: SMTP_HOST,
+      port: SMTP_PORT,
+      secure: SMTP_PORT === 465,
+      auth: SMTP_USER && SMTP_PASS ? { user: SMTP_USER, pass: SMTP_PASS } : undefined,
+      tls: { rejectUnauthorized: false },
+    });
+    const info = await transporter.sendMail({
+      from: EMAIL_FROM,
+      to: EMAIL_TO.join(', '),
+      subject,
+      text,
+    });
+    return { sent: true, messageId: info.messageId };
+  } catch (err) {
+    console.error('[EMAIL] send failed:', err?.message ?? err);
+    return { sent: false, reason: 'error', error: String(err?.message ?? err) };
+  }
+}
+async function notifyAdmins({ subject, text }) {
+  const [line, email] = await Promise.all([
+    sendLineNotify(`${subject}\n${text}`),
+    sendEmail(subject, text),
+  ]);
+  return { line, email };
 }
 
 // ── business settings ──────────────────────────────────────────────────────
@@ -206,11 +249,12 @@ app.post('/api/bookings', async (req, res) => {
     note?.trim() || '',
   );
 
-  const lineResult = await sendLineNotify(
-    `💅 คิวใหม่!\n${svc.icon} ${svc.name}\n👤 ${name.trim()} (${phone.trim()})\n📅 ${date} ${time}\n🔢 ${ref}`,
-  );
+  const notify = await notifyAdmins({
+    subject: '💅 คิวใหม่!',
+    text: `${svc.icon} ${svc.name}\n👤 ${name.trim()} (${phone.trim()})\n📅 ${date} ${time}\n🔢 ${ref}`,
+  });
 
-  res.status(201).json({ ref, message: 'จองคิวสำเร็จ', service: svc, line: lineResult });
+  res.status(201).json({ ref, message: 'จองคิวสำเร็จ', service: svc, line: notify.line, email: notify.email });
 });
 
 // ── public: lookup bookings by phone ───────────────────────────────────────
@@ -237,9 +281,10 @@ app.patch('/api/bookings/:ref/cancel', async (req, res) => {
   if (b.status === 'completed') return res.status(400).json({ error: 'คิวนี้จบแล้ว ไม่สามารถยกเลิกได้' });
   await db.run("UPDATE bookings SET status='cancelled' WHERE id=?", b.id);
   const svc = await db.get('SELECT name, icon FROM services WHERE id=?', b.service_id);
-  await sendLineNotify(
-    `🗑️ คิวถูกยกเลิก\n${svc?.icon ?? '💅'} ${svc?.name ?? ''}\n👤 ${b.name} (${b.phone})\n📅 ${b.date} ${b.time}\n🔢 ${b.ref}`,
-  );
+  await notifyAdmins({
+    subject: '🗑️ คิวถูกยกเลิกโดยลูกค้า',
+    text: `${svc?.icon ?? '💅'} ${svc?.name ?? ''}\n👤 ${b.name} (${b.phone})\n📅 ${b.date} ${b.time}\n🔢 ${b.ref}`,
+  });
   res.json({ message: 'ยกเลิกคิวเรียบร้อย' });
 });
 
@@ -302,14 +347,15 @@ app.patch('/api/admin/bookings/:id', requireAdmin, async (req, res) => {
   );
   if (b) {
     const statusEmoji = { confirmed: '✅ ยืนยันคิว', completed: '💅 เสร็จแล้ว', cancelled: '🗑️ ยกเลิกคิว', pending: '⏳ รอยืนยัน' };
-    await sendLineNotify(
-      `${statusEmoji[status] ?? status}\n${b.icon} ${b.service_name}\n👤 ${b.name} (${b.phone})\n📅 ${b.date} ${b.time}\n🔢 ${b.ref}`,
-    );
+    await notifyAdmins({
+      subject: `${statusEmoji[status] ?? status}`,
+      text: `${b.icon} ${b.service_name}\n👤 ${b.name} (${b.phone})\n📅 ${b.date} ${b.time}\n🔢 ${b.ref}`,
+    });
   }
   res.json({ message: 'ok' });
 });
 
-// ── admin: LINE status + test notify ───────────────────────────────────────
+// ── admin: LINE/Email status + test notify ─────────────────────────────────
 app.get('/api/admin/line-status', requireAdmin, (req, res) => {
   res.json({ configured: !!LINE_NOTIFY_TOKEN });
 });
@@ -318,6 +364,18 @@ app.post('/api/admin/test-line', requireAdmin, async (req, res) => {
   const result = await sendLineNotify('💅 LINE Notify ทำงานได้ปกติ!\nNail & Salon\nระบบจะแจ้งเตือนคิวใหม่ทันทีที่มีคนจอง');
   if (!result.sent && result.reason === 'no-token') {
     return res.status(400).json({ error: 'ยังไม่ได้ตั้งค่า LINE_NOTIFY_TOKEN ใน .env', ...result });
+  }
+  res.json(result);
+});
+
+app.get('/api/admin/email-status', requireAdmin, (req, res) => {
+  res.json({ configured: emailConfigured(), to: EMAIL_TO });
+});
+
+app.post('/api/admin/test-email', requireAdmin, async (req, res) => {
+  const result = await sendEmail('💅 Nail & Salon — ทดสอบระบบแจ้งเตือน', 'สวัสดีครับ/ค่ะ\nระบบแจ้งเตือนทางอีเมลทำงานได้ปกติ!\nตอนนี้จะมีข้อความแจ้งเตือนทุกครั้งที่มีคิวใหม่ / ยกเลิก / เปลี่ยนสถานะ');
+  if (!result.sent && result.reason === 'no-config') {
+    return res.status(400).json({ error: 'ยังไม่ได้ตั้งค่า SMTP / EMAIL_TO ใน .env', ...result });
   }
   res.json(result);
 });
